@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electrical Load Schedule</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1e3a8a; /* Blue 900 */
+            --secondary: #3b82f6; /* Blue 500 */
+            --bg: #f3f4f6; /* Gray 100 */
+            --paper: #ffffff;
+            --text: #1f2937; /* Gray 800 */
+            --border: #d1d5db; /* Gray 300 */
+            --table-border: #000000;
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Prompt', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .control-panel {
+            background: var(--primary);
+            color: white;
+            width: 100%;
+            max-width: 1200px;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            align-items: end;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group label {
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 5px;
+            color: #93c5fd;
+        }
+
+        .input-group input, .input-group select {
+            padding: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 14px;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .input-group input:focus, .input-group select:focus {
+            background: rgba(255,255,255,0.2);
+            border-color: white;
+        }
+        
+        .input-group select option {
+            background: var(--text);
+            color: white;
+        }
+
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 14px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-add {
+            background-color: var(--success);
+            color: white;
+        }
+        .btn-add:hover { background-color: #059669; }
+
+        .btn-print {
+            background-color: #f59e0b; /* Amber 500 */
+            color: white;
+        }
+        .btn-print:hover { background-color: #d97706; }
+
+        .btn-delete {
+            background-color: var(--danger);
+            color: white;
+            padding: 5px 10px;
+            font-size: 12px;
+            border-radius: 4px;
+        }
+        .btn-delete:hover { background-color: #b91c1c; }
+
+        .paper-container {
+            width: 100%;
+            max-width: 1200px;
+            overflow-x: auto;
+        }
+
+        .paper {
+            background: var(--paper);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            min-width: 900px;
+        }
+
+        .doc-header {
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .doc-header h2 {
+            margin: 0 0 15px 0;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .doc-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            text-align: left;
+            font-size: 14px;
+            gap: 10px;
+            border-top: 2px solid var(--table-border);
+            padding-top: 15px;
+        }
+        
+        .doc-info-grid span {
+            font-weight: 600;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 2px solid var(--table-border);
+            margin-top: 20px;
+            font-size: 13px;
+        }
+
+        th, td {
+            border: 1px solid var(--table-border);
+            padding: 8px 4px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        th {
+            background-color: #f8fafc;
+            font-weight: 600;
+        }
+
+        .table-input {
+            width: 100%;
+            border: 1px solid transparent;
+            text-align: center;
+            font-size: 13px;
+            padding: 4px;
+            background: transparent;
+            font-family: inherit;
+        }
+        
+        .table-input:focus {
+            border: 1px solid var(--secondary);
+            outline: none;
+            background: #eff6ff;
+            border-radius: 4px;
+        }
+
+        .desc-input {
+            text-align: left;
+            width: 100%;
+            min-width: 150px;
+        }
+
+        .phase-dropdown {
+            width: 100%;
+            border: none;
+            background: transparent;
+            text-align: center;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        .phase-dropdown:focus {
+            outline: none;
+        }
+
+        .summary-row {
+            font-weight: 700;
+            background-color: #f8fafc;
+        }
+
+        .main-summary {
+            margin-top: 20px;
+            border: 2px solid var(--table-border);
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            background: #f8fafc;
+        }
+
+        /* Print Styles */
+        @media print {
+            body { background: white; padding: 0; }
+            .no-print { display: none !important; }
+            .paper-container { overflow: visible; }
+            .paper { box-shadow: none; padding: 0; border-radius: 0; }
+            .table-input { border: none !important; background: transparent !important; }
+            .phase-dropdown { appearance: none; -webkit-appearance: none; -moz-appearance: none; }
+            @page { size: A4 landscape; margin: 10mm; }
+        }
+        
+        .hide-col { display: none !important; }
+
+    </style>
+</head>
+<body>
+
+    <div class="control-panel no-print">
+        <div class="input-group">
+            <label>PROJECT</label>
+            <input type="text" id="cpProject" value="บ้านพักอาศัย 2 ชั้น" oninput="syncHeaders()">
+        </div>
+        <div class="input-group">
+            <label>PANEL NO.</label>
+            <input type="text" id="cpPanel" value="LP-1" oninput="syncHeaders()">
+        </div>
+        <div class="input-group">
+            <label>SYSTEM</label>
+            <select id="cpSystem" onchange="toggleSystem(); syncHeaders(); calculate()">
+                <option value="1P">1 Phase 2 Wire 230V</option>
+                <option value="3P" selected>3 Phase 4 Wire 400/230V</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>DESIGNER</label>
+            <input type="text" id="cpDesigner" value="Engineer" oninput="syncHeaders()">
+        </div>
+        <div class="input-group">
+            <label>MAIN CB / METER</label>
+            <input type="text" id="cpMeter" value="PEA 15(45)A" oninput="syncHeaders()">
+        </div>
+        <div style="display: flex; gap: 10px; grid-column: 1 / -1;">
+            <button class="btn btn-add" onclick="addCircuit()">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                เพิ่มวงจร (Add Circuit)
+            </button>
+            <button class="btn btn-print" onclick="window.print()">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                พิมพ์ / PDF (Print)
+            </button>
+        </div>
+    </div>
+
+    <div class="paper-container">
+        <div class="paper">
+            <div class="doc-header">
+                <h2>LOAD SCHEDULE</h2>
+                <div class="doc-info-grid">
+                    <div>Project: <span id="dhProject">บ้านพักอาศัย 2 ชั้น</span></div>
+                    <div>Panel: <span id="dhPanel">LP-1</span></div>
+                    <div>System: <span id="dhSystem">3 Phase 4 Wire 400/230V</span></div>
+                    <div>Designer: <span id="dhDesigner">Engineer</span></div>
+                    <div>Main/Meter: <span id="dhMeter">PEA 15(45)A</span></div>
+                    <div>Date: <span id="dhDate"></span></div>
+                </div>
+            </div>
+
+            <table id="scheduleTable">
+                <thead>
+                    <tr>
+                        <th rowspan="2" style="width: 40px;">CCT.</th>
+                        <th rowspan="2">Description</th>
+                        <th rowspan="2" style="width: 80px;">Load (VA)</th>
+                        <th colspan="3" class="col-3p">Phase Load (VA)</th>
+                        <th rowspan="2" class="col-1p hide-col">Phase</th>
+                        <th rowspan="2" style="width: 60px;">Amps</th>
+                        <th rowspan="2" style="width: 70px;">CB (AT)</th>
+                        <th rowspan="2" style="width: 70px;">CB (AF)</th>
+                        <th rowspan="2" style="width: 60px;">Pole</th>
+                        <th rowspan="2" style="width: 100px;">Wire (sq.mm)</th>
+                        <th rowspan="2" style="width: 100px;">GND (sq.mm)</th>
+                        <th rowspan="2" style="width: 100px;">Conduit</th>
+                        <th rowspan="2" class="no-print" style="width: 50px;">Act</th>
+                    </tr>
+                    <tr class="col-3p">
+                        <th style="width: 70px;">L1 (R)</th>
+                        <th style="width: 70px;">L2 (S)</th>
+                        <th style="width: 70px;">L3 (T)</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Rows generated by JS -->
+                </tbody>
+                <tfoot>
+                    <tr class="summary-row">
+                        <td colspan="2" style="text-align: right; padding-right: 15px;">TOTAL</td>
+                        <td id="sumVA">0</td>
+                        <td id="sumL1" class="col-3p">0</td>
+                        <td id="sumL2" class="col-3p">0</td>
+                        <td id="sumL3" class="col-3p">0</td>
+                        <td class="col-1p hide-col"></td>
+                        <td id="sumAmps">0.0</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td class="no-print"></td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <div class="main-summary">
+                <div>
+                    <strong>Total Connected Load:</strong> <span id="outTotalVA">0</span> VA <br>
+                    <strong>Max Demand Load (100%):</strong> <span id="outDemandVA">0</span> VA <br>
+                </div>
+                <div>
+                    <strong>Main Breaker (Calculated):</strong> <span id="outMainCB">0</span> AT<br>
+                    <strong>Main Feeder (Calculated):</strong> <span id="outMainWire"></span> sq.mm<br>
+                </div>
+                <div class="col-3p">
+                    <strong>Max Unbalance:</strong> <span id="outUnbalance">0.0</span>% <br>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set Date
+        document.getElementById('dhDate').innerText = new Date().toLocaleDateString('th-TH');
+
+        // State
+        let circuits = [
+            { id: 1, desc: 'Lighting 1', va: 800, phase: 'L1', cb: '', wire: '' },
+            { id: 2, desc: 'Lighting 2', va: 600, phase: 'L2', cb: '', wire: '' },
+            { id: 3, desc: 'Receptacle 1', va: 1200, phase: 'L3', cb: '', wire: '' },
+            { id: 4, desc: 'Receptacle 2', va: 1500, phase: 'L1', cb: '', wire: '' },
+            { id: 5, desc: 'A/C 12000 BTU', va: 1500, phase: 'L2', cb: '', wire: '' },
+            { id: 6, desc: 'Water Heater', va: 3500, phase: 'L3', cb: '', wire: '' }
+        ];
+
+        // Standard Sizes
+        const STD_CB = [10, 16, 20, 25, 32, 40, 50, 63, 80, 100, 125, 160, 200, 250];
+        const STD_WIRE = [1.5, 2.5, 4, 6, 10, 16, 25, 35, 50, 70, 95, 120];
+        const STD_GND = [1.5, 2.5, 2.5, 4, 4, 6, 6, 10, 10, 16, 16, 16]; // roughly corresponding to wire size index
+
+        function syncHeaders() {
+            document.getElementById('dhProject').innerText = document.getElementById('cpProject').value;
+            document.getElementById('dhPanel').innerText = document.getElementById('cpPanel').value;
+            document.getElementById('dhSystem').innerText = document.getElementById('cpSystem').options[document.getElementById('cpSystem').selectedIndex].text;
+            document.getElementById('dhDesigner').innerText = document.getElementById('cpDesigner').value;
+            document.getElementById('dhMeter').innerText = document.getElementById('cpMeter').value;
+        }
+
+        function toggleSystem() {
+            const is3P = document.getElementById('cpSystem').value === '3P';
+            document.querySelectorAll('.col-3p').forEach(el => {
+                if (is3P) el.classList.remove('hide-col');
+                else el.classList.add('hide-col');
+            });
+            document.querySelectorAll('.col-1p').forEach(el => {
+                if (!is3P) el.classList.remove('hide-col');
+                else el.classList.add('hide-col');
+            });
+            renderTable();
+        }
+
+        function addCircuit() {
+            const nextPhase = document.getElementById('cpSystem').value === '3P' 
+                ? (['L1','L2','L3'])[circuits.length % 3] 
+                : 'L1';
+            
+            circuits.push({
+                id: circuits.length + 1,
+                desc: 'New Circuit',
+                va: 0,
+                phase: nextPhase,
+                cb: '',
+                wire: ''
+            });
+            renderTable();
+        }
+
+        function removeCircuit(index) {
+            circuits.splice(index, 1);
+            // Reassign IDs
+            circuits.forEach((c, i) => c.id = i + 1);
+            renderTable();
+        }
+
+        function updateData(index, field, value) {
+            if (field === 'va') {
+                circuits[index][field] = parseInt(value) || 0;
+            } else {
+                circuits[index][field] = value;
+            }
+            calculate();
+        }
+
+        function determineSizes(va) {
+            const current = va / 230; // phase voltage
+            const designCurrent = current * 1.25; // 125% safety factor for CB
+            
+            let cbSize = 10;
+            let wireSize = 1.5;
+            let gndSize = 1.5;
+
+            // Find matching CB
+            for(let i=0; i<STD_CB.length; i++) {
+                if(STD_CB[i] >= designCurrent) {
+                    cbSize = STD_CB[i];
+                    // Map to wire (simplified lookup based on CB size)
+                    // 10A->1.5, 16A->2.5, 20A->4, 25/32A->6, 40A->10, 50A->16, 63A->25, 80A->35, 100A->50
+                    if (cbSize <= 10) { wireSize = 1.5; gndSize = 1.5; }
+                    else if (cbSize <= 16) { wireSize = 2.5; gndSize = 2.5; }
+                    else if (cbSize <= 20) { wireSize = 4; gndSize = 2.5; }
+                    else if (cbSize <= 32) { wireSize = 6; gndSize = 4; }
+                    else if (cbSize <= 40) { wireSize = 10; gndSize = 4; }
+                    else if (cbSize <= 50) { wireSize = 16; gndSize = 6; }
+                    else if (cbSize <= 63) { wireSize = 25; gndSize = 6; }
+                    else if (cbSize <= 80) { wireSize = 35; gndSize = 10; }
+                    else if (cbSize <= 100) { wireSize = 50; gndSize = 10; }
+                    else { wireSize = 70; gndSize = 16; }
+                    break;
+                }
+            }
+            
+            // Override minimums
+            if (va === 0) { cbSize = 16; wireSize = 2.5; gndSize = 2.5; } // Default empty
+
+            return { amp: current, cb: cbSize, wire: wireSize, gnd: gndSize };
+        }
+
+        function calculate() {
+            let totalVA = 0, sumL1 = 0, sumL2 = 0, sumL3 = 0;
+            const is3P = document.getElementById('cpSystem').value === '3P';
+
+            circuits.forEach(c => {
+                totalVA += c.va;
+                if (is3P) {
+                    if(c.phase === 'L1') sumL1 += c.va;
+                    if(c.phase === 'L2') sumL2 += c.va;
+                    if(c.phase === 'L3') sumL3 += c.va;
+                } else {
+                    c.phase = 'L1';
+                    sumL1 += c.va;
+                }
+            });
+
+            // Update footer
+            document.getElementById('sumVA').innerText = totalVA.toLocaleString();
+            if(is3P) {
+                document.getElementById('sumL1').innerText = sumL1.toLocaleString();
+                document.getElementById('sumL2').innerText = sumL2.toLocaleString();
+                document.getElementById('sumL3').innerText = sumL3.toLocaleString();
+            }
+
+            const totalAmp = is3P ? (totalVA / (Math.sqrt(3) * 400)) : (totalVA / 230);
+            document.getElementById('sumAmps').innerText = totalAmp.toFixed(1);
+
+            // Update Summary
+            document.getElementById('outTotalVA').innerText = totalVA.toLocaleString();
+            document.getElementById('outDemandVA').innerText = totalVA.toLocaleString();
+            
+            // Unbalance
+            if(is3P && totalVA > 0) {
+                const avg = totalVA / 3;
+                const maxDiff = Math.max(Math.abs(sumL1-avg), Math.abs(sumL2-avg), Math.abs(sumL3-avg));
+                document.getElementById('outUnbalance').innerText = ((maxDiff / avg) * 100).toFixed(1);
+            } else {
+                document.getElementById('outUnbalance').innerText = "0.0";
+            }
+
+            // Main Size calculation
+            let mainCB = 16; let mainWire = 2.5;
+            for(let i=0; i<STD_CB.length; i++) {
+                if(STD_CB[i] >= totalAmp * 1.25) {
+                    mainCB = STD_CB[i];
+                    break;
+                }
+            }
+            if(mainCB <= 16) mainWire = 4;
+            else if (mainCB <= 20) mainWire = 4;
+            else if (mainCB <= 32) mainWire = 6;
+            else if (mainCB <= 40) mainWire = 10;
+            else if (mainCB <= 50) mainWire = 16;
+            else if (mainCB <= 63) mainWire = 25;
+            else if (mainCB <= 80) mainWire = 35;
+            else if (mainCB <= 100) mainWire = 50;
+            else mainWire = 70;
+
+            document.getElementById('outMainCB').innerText = mainCB + (is3P ? " (3P)" : " (2P)");
+            document.getElementById('outMainWire').innerText = mainWire;
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            const is3P = document.getElementById('cpSystem').value === '3P';
+            tbody.innerHTML = '';
+
+            circuits.forEach((c, index) => {
+                const calc = determineSizes(c.va);
+                const displayCB = c.cb ? c.cb : calc.cb;
+                const displayWire = c.wire ? c.wire : calc.wire;
+
+                const tr = document.createElement('tr');
+                
+                let phaseCells = '';
+                if(is3P) {
+                    phaseCells = `
+                        <td class="col-3p">${c.phase === 'L1' ? c.va : ''}</td>
+                        <td class="col-3p">${c.phase === 'L2' ? c.va : ''}</td>
+                        <td class="col-3p">${c.phase === 'L3' ? c.va : ''}</td>
+                    `;
+                } else {
+                    phaseCells = `<td class="col-1p">L1</td>`;
+                }
+
+                let phaseDropdown = '';
+                if(is3P) {
+                    phaseDropdown = `
+                        <select class="phase-dropdown no-print" style="width:100%" onchange="updateData(${index}, 'phase', this.value); renderTable();">
+                            <option value="L1" ${c.phase === 'L1' ? 'selected' : ''}>L1</option>
+                            <option value="L2" ${c.phase === 'L2' ? 'selected' : ''}>L2</option>
+                            <option value="L3" ${c.phase === 'L3' ? 'selected' : ''}>L3</option>
+                        </select>
+                    `;
+                }
+
+                tr.innerHTML = `
+                    <td>${c.id}</td>
+                    <td><input type="text" class="table-input desc-input" value="${c.desc}" onchange="updateData(${index}, 'desc', this.value)"></td>
+                    <td><input type="number" class="table-input" value="${c.va}" onchange="updateData(${index}, 'va', this.value); renderTable();"></td>
+                    ${phaseCells}
+                    <td style="position:relative;">
+                        <span style="display:none;" class="print-only">${c.phase}</span>
+                        ${phaseDropdown}
+                    </td>
+                    <td>${calc.amp.toFixed(1)}</td>
+                    <td><input type="text" class="table-input" placeholder="${calc.cb}" value="${c.cb}" onchange="updateData(${index}, 'cb', this.value)"></td>
+                    <td>50AF</td>
+                    <td>1P</td>
+                    <td><input type="text" class="table-input" placeholder="${calc.wire}" value="${c.wire}" onchange="updateData(${index}, 'wire', this.value)"></td>
+                    <td>${calc.gnd}</td>
+                    <td>15mm</td>
+                    <td class="no-print"><button class="btn-delete" onclick="removeCircuit(${index})">Del</button></td>
+                `;
+
+                if(!is3P) {
+                    // Hide elements in JS constructed string if 1P
+                    tr.querySelector('.col-1p').style.display = 'table-cell';
+                }
+
+                tbody.appendChild(tr);
+            });
+
+            calculate();
+            
+            // Force apply CSS visibility logic from JS
+            const is3P_final = document.getElementById('cpSystem').value === '3P';
+            document.querySelectorAll('#tableBody .col-3p').forEach(el => {
+                el.style.display = is3P_final ? 'table-cell' : 'none';
+            });
+            document.querySelectorAll('#tableBody .col-1p').forEach(el => {
+                el.style.display = is3P_final ? 'none' : 'table-cell';
+            });
+        }
+
+        // Initialize
+        toggleSystem();
+        syncHeaders();
+        renderTable();
+    </script>
+</body>
+</html>

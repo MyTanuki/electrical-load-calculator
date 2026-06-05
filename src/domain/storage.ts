@@ -21,6 +21,30 @@ function namedProjectKey(id: string): string {
   return `${STORAGE_PREFIX}:project:${id}`;
 }
 
+function safeGetItem(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeSetItem(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Storage can be blocked or full; callers treat persistence as best effort.
+  }
+}
+
+function safeRemoveItem(key: string): void {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // Storage can be blocked; delete operations are best effort.
+  }
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -101,7 +125,7 @@ function isElectricalProject(value: unknown): value is ElectricalProject {
 }
 
 function readProject(key: string): ElectricalProject | null {
-  const content = localStorage.getItem(key);
+  const content = safeGetItem(key);
 
   if (content === null) {
     return null;
@@ -113,7 +137,7 @@ function readProject(key: string): ElectricalProject | null {
 }
 
 function readSavedProjectSummaries(): SavedProjectSummary[] {
-  const content = localStorage.getItem(SAVED_PROJECTS_INDEX_KEY);
+  const content = safeGetItem(SAVED_PROJECTS_INDEX_KEY);
 
   if (content === null) {
     return [];
@@ -140,7 +164,7 @@ function readSavedProjectSummaries(): SavedProjectSummary[] {
 }
 
 function writeSavedProjectSummaries(summaries: SavedProjectSummary[]): void {
-  localStorage.setItem(SAVED_PROJECTS_INDEX_KEY, JSON.stringify(summaries, null, 2));
+  safeSetItem(SAVED_PROJECTS_INDEX_KEY, JSON.stringify(summaries, null, 2));
 }
 
 export function serializeProject(project: ElectricalProject): string {
@@ -168,7 +192,7 @@ export function parseImportedProject(content: string): ImportedProjectResult {
 }
 
 export function saveDraft(project: ElectricalProject): void {
-  localStorage.setItem(DRAFT_KEY, serializeProject(project));
+  safeSetItem(DRAFT_KEY, serializeProject(project));
 }
 
 export function loadDraft(): ElectricalProject | null {
@@ -176,7 +200,7 @@ export function loadDraft(): ElectricalProject | null {
 }
 
 export function saveNamedProject(id: string, name: string, project: ElectricalProject): void {
-  localStorage.setItem(namedProjectKey(id), serializeProject(project));
+  safeSetItem(namedProjectKey(id), serializeProject(project));
 
   const summaries = readSavedProjectSummaries().filter((summary) => summary.id !== id);
   summaries.push({
@@ -198,7 +222,7 @@ export function loadNamedProject(id: string): ElectricalProject | null {
 }
 
 export function deleteNamedProject(id: string): void {
-  localStorage.removeItem(namedProjectKey(id));
+  safeRemoveItem(namedProjectKey(id));
   writeSavedProjectSummaries(readSavedProjectSummaries().filter((summary) => summary.id !== id));
 }
 

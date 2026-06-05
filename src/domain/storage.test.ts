@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createStarterProject } from './presets';
 import {
@@ -28,6 +28,7 @@ function project(overrides: Partial<ElectricalProject> = {}): ElectricalProject 
 
 describe('domain storage', () => {
   beforeEach(() => {
+    vi.restoreAllMocks();
     localStorage.clear();
   });
 
@@ -109,5 +110,46 @@ describe('domain storage', () => {
 
     expect(loadNamedProject('main')).toBeNull();
     expect(listSavedProjects()).toHaveLength(1);
+  });
+
+  it('returns safe fallbacks when localStorage getItem throws', () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('storage blocked');
+    });
+
+    expect(loadDraft()).toBeNull();
+    expect(listSavedProjects()).toEqual([]);
+    expect(loadNamedProject('main')).toBeNull();
+  });
+
+  it('does not throw when localStorage setItem throws', () => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('quota exceeded');
+    });
+
+    expect(() => saveDraft(project())).not.toThrow();
+    expect(() => saveNamedProject('main', 'Main saved file', project())).not.toThrow();
+  });
+
+  it('does not throw when named project index reads fail during writes', () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('storage blocked');
+    });
+
+    expect(() => saveNamedProject('main', 'Main saved file', project())).not.toThrow();
+    expect(() => deleteNamedProject('main')).not.toThrow();
+  });
+
+  it('does not throw when deleting named projects and localStorage writes fail', () => {
+    saveNamedProject('main', 'Main saved file', project());
+
+    vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
+      throw new Error('storage blocked');
+    });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('quota exceeded');
+    });
+
+    expect(() => deleteNamedProject('main')).not.toThrow();
   });
 });
