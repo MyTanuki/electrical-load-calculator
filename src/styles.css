@@ -71,6 +71,7 @@ label {
 .app-shell {
   display: grid;
   align-items: start;
+  align-content: start;
   gap: 16px;
   width: min(100%, 1440px);
   min-height: 100vh;
