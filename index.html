@@ -41,8 +41,8 @@
             border-radius: 12px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
             margin-bottom: 20px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            display: flex;
+            flex-wrap: wrap;
             gap: 15px;
             align-items: end;
         }
@@ -50,6 +50,7 @@
         .input-group {
             display: flex;
             flex-direction: column;
+            flex: 1 1 150px;
         }
 
         .input-group label {
@@ -267,7 +268,7 @@
         </div>
         <div class="input-group">
             <label>SYSTEM</label>
-            <select id="cpSystem" onchange="toggleSystem(); syncHeaders(); calculate()">
+            <select id="cpSystem" style="min-width: 220px;" onchange="toggleSystem(); syncHeaders(); calculate()">
                 <option value="1P" selected>1 Phase 2 Wire 230V</option>
                 <option value="3P">3 Phase 4 Wire 400/230V</option>
             </select>
@@ -280,7 +281,7 @@
             <label>MAIN CB / METER</label>
             <input type="text" id="cpMeter" value="PEA 30(100)A" oninput="syncHeaders()">
         </div>
-        <div style="display: flex; gap: 10px; grid-column: 1 / -1; flex-wrap: wrap;">
+        <div style="display: flex; gap: 10px; width: 100%; flex-wrap: wrap; margin-top: 5px;">
             <button class="btn btn-add" onclick="addCircuit()">
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                 เพิ่มวงจร (Add Circuit)
@@ -324,7 +325,7 @@
                         <th rowspan="2" style="width: 70px;">Phase</th>
                         <th colspan="3" class="col-3p">Phase Load (VA)</th>
                         <th rowspan="2" style="width: 60px;">Amps</th>
-                        <th rowspan="2" style="width: 70px;">CB (AT)</th>
+                        <th rowspan="2" style="width: 100px;">CB (AT)</th>
                         <th rowspan="2" style="width: 70px;">CB (AF)</th>
                         <th rowspan="2" style="width: 60px;">Pole</th>
                         <th rowspan="2" style="width: 100px;">Wire (sq.mm)</th>
@@ -436,7 +437,8 @@
                 va: 0,
                 phase: nextPhase,
                 cb: '',
-                wire: ''
+                wire: '',
+                gnd: ''
             });
             renderTable();
         }
@@ -670,7 +672,7 @@
                     <td>50AF</td>
                     <td>1P</td>
                     <td><input type="text" class="table-input" placeholder="${calc.wire}" value="${c.wire}" onchange="updateData(${index}, 'wire', this.value)"></td>
-                    <td>${calc.gnd}</td>
+                    <td><input type="text" class="table-input" placeholder="${calc.gnd}" value="${c.gnd || ''}" onchange="updateData(${index}, 'gnd', this.value)"></td>
                     <td>15mm</td>
                     <td class="no-print"><button class="btn-delete" onclick="removeCircuit(${index})">Del</button></td>
                 `;
@@ -703,20 +705,62 @@
             localStorage.setItem('loadScheduleData', JSON.stringify(data));
         }
 
-        function loadData() {
+        async function loadData() {
+            try {
+                // Load from default-loadschedule.json first
+                const response = await fetch('default-loadschedule.json');
+                if (response.ok) {
+                    const data = await response.json();
+                    if(data.project !== undefined) document.getElementById('cpProject').value = data.project;
+                    if(data.panel !== undefined) document.getElementById('cpPanel').value = data.panel;
+                    if(data.system !== undefined) document.getElementById('cpSystem').value = data.system;
+                    if(data.designer !== undefined) document.getElementById('cpDesigner').value = data.designer;
+                    if(data.meter !== undefined) document.getElementById('cpMeter').value = data.meter;
+                    if(data.circuits && Array.isArray(data.circuits)) circuits = data.circuits;
+                    return; // Successfully loaded, skip localStorage
+                }
+            } catch(e) {
+                console.warn('Could not fetch default-loadschedule.json (e.g. running locally via file://), falling back.', e);
+            }
+
             const json = localStorage.getItem('loadScheduleData');
             if(json) {
                 try {
                     const data = JSON.parse(json);
-                    if(data.project) document.getElementById('cpProject').value = data.project;
-                    if(data.panel) document.getElementById('cpPanel').value = data.panel;
-                    if(data.system) document.getElementById('cpSystem').value = data.system;
-                    if(data.designer) document.getElementById('cpDesigner').value = data.designer;
-                    if(data.meter) document.getElementById('cpMeter').value = data.meter;
+                    if(data.project !== undefined) document.getElementById('cpProject').value = data.project;
+                    if(data.panel !== undefined) document.getElementById('cpPanel').value = data.panel;
+                    if(data.system !== undefined) document.getElementById('cpSystem').value = data.system;
+                    if(data.designer !== undefined) document.getElementById('cpDesigner').value = data.designer;
+                    if(data.meter !== undefined) document.getElementById('cpMeter').value = data.meter;
                     if(data.circuits && Array.isArray(data.circuits)) circuits = data.circuits;
                 } catch(e) {
                     console.error('Error loading data', e);
                 }
+            } else {
+                // Default Startup Data
+                const defaultData = {
+                  "project": "บ้านพักอาศัย 1 ชั้น",
+                  "panel": "LP-1",
+                  "system": "1P",
+                  "designer": "",
+                  "meter": "PEA 30(100)A",
+                  "circuits": [
+                    { "id": 1, "desc": "Lighting 1", "va": 800, "phase": "L1", "cb": "16A", "wire": "2.5" },
+                    { "id": 2, "desc": "Receptacle 1", "va": 1500, "phase": "L1", "cb": "20A", "wire": "4" },
+                    { "id": 3, "desc": "Receptacle 2", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" },
+                    { "id": 4, "desc": "Receptacle 3", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" },
+                    { "id": 5, "desc": "Receptacle 4", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" },
+                    { "id": 6, "desc": "Receptacle 5", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" },
+                    { "id": 7, "desc": "Receptacle 6", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" },
+                    { "id": 8, "desc": "Receptacle 7", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" }
+                  ]
+                };
+                document.getElementById('cpProject').value = defaultData.project;
+                document.getElementById('cpPanel').value = defaultData.panel;
+                document.getElementById('cpSystem').value = defaultData.system;
+                document.getElementById('cpDesigner').value = defaultData.designer;
+                document.getElementById('cpMeter').value = defaultData.meter;
+                circuits = defaultData.circuits;
             }
         }
 
@@ -765,10 +809,13 @@
         }
 
         // Initialize
-        loadData();
-        toggleSystem();
-        syncHeaders();
-        renderTable();
+        async function initApp() {
+            await loadData();
+            toggleSystem();
+            syncHeaders();
+            renderTable();
+        }
+        initApp();
     </script>
 </body>
 </html>

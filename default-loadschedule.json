@@ -10,64 +10,72 @@
       "desc": "Lighting 1",
       "va": 800,
       "phase": "L1",
-      "cb": "",
-      "wire": ""
+      "cb": "16A",
+      "wire": "2.5",
+      "gnd": "2.5"
     },
     {
       "id": 2,
       "desc": "Receptacle 1",
       "va": 1500,
       "phase": "L1",
-      "cb": "20",
-      "wire": "4"
+      "cb": "20A",
+      "wire": "4",
+      "gnd": "4"
     },
     {
       "id": 3,
       "desc": "Receptacle 2",
       "va": 2000,
       "phase": "L1",
-      "cb": "20",
-      "wire": "4"
+      "cb": "20A RCBO",
+      "wire": "4",
+      "gnd": "4"
     },
     {
       "id": 4,
       "desc": "Receptacle 3",
       "va": 2000,
       "phase": "L1",
-      "cb": "20",
-      "wire": "4"
+      "cb": "20A RCBO",
+      "wire": "4",
+      "gnd": "4"
     },
     {
       "id": 5,
       "desc": "Receptacle 4",
       "va": 2000,
       "phase": "L1",
-      "cb": "20",
-      "wire": "4"
+      "cb": "20A RCBO",
+      "wire": "4",
+      "gnd": "4"
     },
     {
       "id": 6,
       "desc": "Receptacle 5",
       "va": 2000,
       "phase": "L1",
-      "cb": "20",
-      "wire": "4"
+      "cb": "20A RCBO",
+      "wire": "4",
+      "gnd": "4"
     },
     {
       "id": 7,
       "desc": "Receptacle 6",
       "va": 2000,
       "phase": "L1",
-      "cb": "20",
-      "wire": "4"
+      "cb": "20A RCBO",
+      "wire": "4",
+      "gnd": "4"
     },
     {
       "id": 8,
       "desc": "Receptacle 7",
       "va": 2000,
       "phase": "L1",
-      "cb": "20",
-      "wire": "4"
+      "cb": "20A RCBO",
+      "wire": "4",
+      "gnd": "4"
     }
   ]
 }
