@@ -238,6 +238,20 @@
         
         .hide-col { display: none !important; }
 
+        .analysis-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0fdf4; /* Light green background */
+            border-left: 4px solid var(--success);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .analysis-panel h3 {
+            margin: 0 0 10px 0;
+            color: #166534; /* Dark green */
+            font-size: 15px;
+        }
+
     </style>
 </head>
 <body>
@@ -245,7 +259,7 @@
     <div class="control-panel no-print">
         <div class="input-group">
             <label>PROJECT</label>
-            <input type="text" id="cpProject" value="บ้านพักอาศัย 2 ชั้น" oninput="syncHeaders()">
+            <input type="text" id="cpProject" value="บ้านพักอาศัย 1 ชั้น" oninput="syncHeaders()">
         </div>
         <div class="input-group">
             <label>PANEL NO.</label>
@@ -254,8 +268,8 @@
         <div class="input-group">
             <label>SYSTEM</label>
             <select id="cpSystem" onchange="toggleSystem(); syncHeaders(); calculate()">
-                <option value="1P">1 Phase 2 Wire 230V</option>
-                <option value="3P" selected>3 Phase 4 Wire 400/230V</option>
+                <option value="1P" selected>1 Phase 2 Wire 230V</option>
+                <option value="3P">3 Phase 4 Wire 400/230V</option>
             </select>
         </div>
         <div class="input-group">
@@ -264,9 +278,9 @@
         </div>
         <div class="input-group">
             <label>MAIN CB / METER</label>
-            <input type="text" id="cpMeter" value="PEA 15(45)A" oninput="syncHeaders()">
+            <input type="text" id="cpMeter" value="PEA 30(100)A" oninput="syncHeaders()">
         </div>
-        <div style="display: flex; gap: 10px; grid-column: 1 / -1;">
+        <div style="display: flex; gap: 10px; grid-column: 1 / -1; flex-wrap: wrap;">
             <button class="btn btn-add" onclick="addCircuit()">
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                 เพิ่มวงจร (Add Circuit)
@@ -275,6 +289,15 @@
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                 พิมพ์ / PDF (Print)
             </button>
+            <button class="btn" style="background-color: #374151; color: white;" onclick="exportJSON()">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                Export JSON
+            </button>
+            <button class="btn" style="background-color: #4b5563; color: white;" onclick="document.getElementById('importFile').click()">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                Import JSON
+            </button>
+            <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importJSON(event)">
         </div>
     </div>
 
@@ -298,8 +321,8 @@
                         <th rowspan="2" style="width: 40px;">CCT.</th>
                         <th rowspan="2">Description</th>
                         <th rowspan="2" style="width: 80px;">Load (VA)</th>
+                        <th rowspan="2" style="width: 70px;">Phase</th>
                         <th colspan="3" class="col-3p">Phase Load (VA)</th>
-                        <th rowspan="2" class="col-1p hide-col">Phase</th>
                         <th rowspan="2" style="width: 60px;">Amps</th>
                         <th rowspan="2" style="width: 70px;">CB (AT)</th>
                         <th rowspan="2" style="width: 70px;">CB (AF)</th>
@@ -322,10 +345,10 @@
                     <tr class="summary-row">
                         <td colspan="2" style="text-align: right; padding-right: 15px;">TOTAL</td>
                         <td id="sumVA">0</td>
+                        <td></td>
                         <td id="sumL1" class="col-3p">0</td>
                         <td id="sumL2" class="col-3p">0</td>
                         <td id="sumL3" class="col-3p">0</td>
-                        <td class="col-1p hide-col"></td>
                         <td id="sumAmps">0.0</td>
                         <td></td>
                         <td></td>
@@ -351,6 +374,11 @@
                     <strong>Max Unbalance:</strong> <span id="outUnbalance">0.0</span>% <br>
                 </div>
             </div>
+
+            <div id="analysisPanel" class="analysis-panel">
+                <h3>วิเคราะห์ตามหลักวิศวกรรมศาสตร์ (Engineering Analysis)</h3>
+                <div id="analysisContent">กำลังวิเคราะห์ข้อมูล...</div>
+            </div>
         </div>
     </div>
 
@@ -361,11 +389,13 @@
         // State
         let circuits = [
             { id: 1, desc: 'Lighting 1', va: 800, phase: 'L1', cb: '', wire: '' },
-            { id: 2, desc: 'Lighting 2', va: 600, phase: 'L2', cb: '', wire: '' },
-            { id: 3, desc: 'Receptacle 1', va: 1200, phase: 'L3', cb: '', wire: '' },
-            { id: 4, desc: 'Receptacle 2', va: 1500, phase: 'L1', cb: '', wire: '' },
-            { id: 5, desc: 'A/C 12000 BTU', va: 1500, phase: 'L2', cb: '', wire: '' },
-            { id: 6, desc: 'Water Heater', va: 3500, phase: 'L3', cb: '', wire: '' }
+            { id: 2, desc: 'Receptacle 1', va: 1500, phase: 'L1', cb: '20', wire: '4' },
+            { id: 3, desc: 'Receptacle 2', va: 2000, phase: 'L1', cb: '20', wire: '4' },
+            { id: 4, desc: 'Receptacle 3', va: 2000, phase: 'L1', cb: '20', wire: '4' },
+            { id: 5, desc: 'Receptacle 4', va: 2000, phase: 'L1', cb: '20', wire: '4' },
+            { id: 6, desc: 'Receptacle 5', va: 2000, phase: 'L1', cb: '20', wire: '4' },
+            { id: 7, desc: 'Receptacle 6', va: 2000, phase: 'L1', cb: '20', wire: '4' },
+            { id: 8, desc: 'Receptacle 7', va: 2000, phase: 'L1', cb: '20', wire: '4' }
         ];
 
         // Standard Sizes
@@ -379,6 +409,7 @@
             document.getElementById('dhSystem').innerText = document.getElementById('cpSystem').options[document.getElementById('cpSystem').selectedIndex].text;
             document.getElementById('dhDesigner').innerText = document.getElementById('cpDesigner').value;
             document.getElementById('dhMeter').innerText = document.getElementById('cpMeter').value;
+            if (typeof saveData === 'function') saveData();
         }
 
         function toggleSystem() {
@@ -520,6 +551,82 @@
 
             document.getElementById('outMainCB').innerText = mainCB + (is3P ? " (3P)" : " (2P)");
             document.getElementById('outMainWire').innerText = mainWire;
+            
+            if (typeof saveData === 'function') saveData();
+        }
+
+
+        function calculateAnalysis() {
+            const is3P = document.getElementById('cpSystem').value === '3P';
+            const meterText = document.getElementById('cpMeter').value.toUpperCase();
+            let totalVA = 0;
+            let sumL1 = 0, sumL2 = 0, sumL3 = 0;
+            
+            let lightCount = 0;
+            let recepCount = 0;
+            let acCount = 0;
+            let otherCount = 0;
+
+            circuits.forEach(c => {
+                totalVA += c.va;
+                if(c.phase === 'L1') sumL1 += c.va;
+                if(c.phase === 'L2') sumL2 += c.va;
+                if(c.phase === 'L3') sumL3 += c.va;
+                
+                const desc = c.desc.toLowerCase();
+                if (desc.includes('light') || desc.includes('แสงสว่าง')) lightCount++;
+                else if (desc.includes('recep') || desc.includes('ปลั๊ก') || desc.includes('เต้ารับ')) recepCount++;
+                else if (desc.includes('a/c') || desc.includes('air') || desc.includes('แอร์') || desc.includes('ปรับอากาศ')) acCount++;
+                else otherCount++;
+            });
+
+            const totalAmp = is3P ? (totalVA / (Math.sqrt(3) * 400)) : (totalVA / 230);
+            
+            let analysisHtml = '<ul>';
+            
+            // 1. Total Load & Meter Analysis
+            analysisHtml += `<li><b>ภาพรวมโหลดและการใช้ไฟ:</b> โหลดรวมของระบบคือ <b>${totalVA.toLocaleString()} VA</b> คิดเป็นกระแสไฟฟ้าประมาณ <b>${totalAmp.toFixed(1)} A</b> ${is3P ? 'ต่อเฟส' : ''} </li>`;
+            
+            let meterMax = 0;
+            if (meterText.includes('15(45)')) meterMax = 45;
+            else if (meterText.includes('30(100)')) meterMax = 100;
+            else if (meterText.includes('50(150)')) meterMax = 150;
+
+            if (meterMax > 0) {
+                const utilPercent = (totalAmp / meterMax) * 100;
+                analysisHtml += `<li><b>ความเหมาะสมของมิเตอร์ (${meterText}):</b> กระแสใช้งานคิดเป็น <b>${utilPercent.toFixed(1)}%</b> ของพิกัดสูงสุดของมิเตอร์ `;
+                if (utilPercent < 80) {
+                    analysisHtml += `<span style="color:var(--success);">ซึ่งอยู่ในเกณฑ์ที่ปลอดภัยและเหมาะสม มีพื้นที่รองรับโหลดเพิ่มเติมในอนาคตได้</span></li>`;
+                } else if (utilPercent <= 100) {
+                    analysisHtml += `<span style="color:#ca8a04;">(ค่อนข้างสูง) ควรระมัดระวังการเปิดอุปกรณ์ไฟฟ้าพร้อมกันทั้งหมด หรือพิจารณาขอขยายขนาดมิเตอร์ในอนาคต</span></li>`;
+                } else {
+                    analysisHtml += `<span style="color:var(--danger);"><b>(เกินพิกัดมิเตอร์!)</b> โหลดรวมเกินกว่าที่มิเตอร์จะรองรับได้ จำเป็นต้องลดโหลดหรือขยายขนาดมิเตอร์ทันที</span></li>`;
+                }
+            } else {
+                analysisHtml += `<li><b>ความเหมาะสมของมิเตอร์:</b> ไม่สามารถระบุพิกัดมิเตอร์จากชื่อได้ โปรดตรวจสอบให้แน่ใจว่ามิเตอร์รองรับกระแส ${totalAmp.toFixed(1)} A ได้อย่างปลอดภัย</li>`;
+            }
+
+            // 2. Circuit Distribution Analysis
+            analysisHtml += `<li><b>การกระจายวงจรย่อย (${circuits.length} วงจร):</b> ประกอบด้วย แสงสว่าง ${lightCount} วงจร, เต้ารับ ${recepCount} วงจร, เครื่องปรับอากาศ ${acCount} วงจร และอื่นๆ ${otherCount} วงจร การแยกวงจรเต้ารับและแสงสว่างออกจากกันช่วยเพิ่มความปลอดภัยและความง่ายในการซ่อมบำรุงตามมาตรฐาน วสท.</li>`;
+
+            // 3. Phase Unbalance (If 3-Phase)
+            if (is3P && totalVA > 0) {
+                const avg = totalVA / 3;
+                const maxDiff = Math.max(Math.abs(sumL1-avg), Math.abs(sumL2-avg), Math.abs(sumL3-avg));
+                const unbalance = (maxDiff / avg) * 100;
+                
+                analysisHtml += `<li><b>ความสมดุลของเฟส (Phase Balancing):</b> อัตราความไม่สมดุลอยู่ที่ <b>${unbalance.toFixed(1)}%</b> `;
+                if (unbalance <= 20) {
+                    analysisHtml += `<span style="color:var(--success);">ซึ่งอยู่ในเกณฑ์มาตรฐานที่ดี (ไม่เกิน 20%) ช่วยลดกระแสไหลกลับในสายนิวทรัลและลดความสูญเสียในระบบ</span></li>`;
+                } else {
+                    analysisHtml += `<span style="color:var(--danger);"><b>ซึ่งเกินเกณฑ์มาตรฐาน 20%</b> แนะนำให้สลับเฟสของวงจรย่อยเพื่อเกลี่ยโหลดระหว่าง L1, L2, L3 ให้ใกล้เคียงกันมากขึ้น</span></li>`;
+                }
+            } else if (!is3P) {
+                analysisHtml += `<li><b>ระบบไฟฟ้า 1 เฟส:</b> ไม่มีการจัดสมดุลเฟสเนื่องจากเป็นระบบ 1 เฟส โหลดทั้งหมดจะตกอยู่ที่สายเส้นเดียว ควรตรวจเช็คจุดต่อสายหลักและเมนเบรกเกอร์ให้แน่นหนาเพื่อป้องกันความร้อนสะสม</li>`;
+            }
+
+            analysisHtml += '</ul>';
+            document.getElementById('analysisContent').innerHTML = analysisHtml;
         }
 
         function renderTable() {
@@ -534,17 +641,6 @@
 
                 const tr = document.createElement('tr');
                 
-                let phaseCells = '';
-                if(is3P) {
-                    phaseCells = `
-                        <td class="col-3p">${c.phase === 'L1' ? c.va : ''}</td>
-                        <td class="col-3p">${c.phase === 'L2' ? c.va : ''}</td>
-                        <td class="col-3p">${c.phase === 'L3' ? c.va : ''}</td>
-                    `;
-                } else {
-                    phaseCells = `<td class="col-1p">L1</td>`;
-                }
-
                 let phaseDropdown = '';
                 if(is3P) {
                     phaseDropdown = `
@@ -553,18 +649,22 @@
                             <option value="L2" ${c.phase === 'L2' ? 'selected' : ''}>L2</option>
                             <option value="L3" ${c.phase === 'L3' ? 'selected' : ''}>L3</option>
                         </select>
+                        <span class="print-only" style="display:none;">${c.phase}</span>
                     `;
+                } else {
+                    phaseDropdown = `<span>L1</span>`;
                 }
 
                 tr.innerHTML = `
                     <td>${c.id}</td>
                     <td><input type="text" class="table-input desc-input" value="${c.desc}" onchange="updateData(${index}, 'desc', this.value)"></td>
                     <td><input type="number" class="table-input" value="${c.va}" onchange="updateData(${index}, 'va', this.value); renderTable();"></td>
-                    ${phaseCells}
                     <td style="position:relative;">
-                        <span style="display:none;" class="print-only">${c.phase}</span>
                         ${phaseDropdown}
                     </td>
+                    <td class="col-3p">${c.phase === 'L1' ? c.va : ''}</td>
+                    <td class="col-3p">${c.phase === 'L2' ? c.va : ''}</td>
+                    <td class="col-3p">${c.phase === 'L3' ? c.va : ''}</td>
                     <td>${calc.amp.toFixed(1)}</td>
                     <td><input type="text" class="table-input" placeholder="${calc.cb}" value="${c.cb}" onchange="updateData(${index}, 'cb', this.value)"></td>
                     <td>50AF</td>
@@ -574,11 +674,6 @@
                     <td>15mm</td>
                     <td class="no-print"><button class="btn-delete" onclick="removeCircuit(${index})">Del</button></td>
                 `;
-
-                if(!is3P) {
-                    // Hide elements in JS constructed string if 1P
-                    tr.querySelector('.col-1p').style.display = 'table-cell';
-                }
 
                 tbody.appendChild(tr);
             });
@@ -593,9 +688,84 @@
             document.querySelectorAll('#tableBody .col-1p').forEach(el => {
                 el.style.display = is3P_final ? 'none' : 'table-cell';
             });
+            calculateAnalysis();
+        }
+
+        function saveData() {
+            const data = {
+                project: document.getElementById('cpProject').value,
+                panel: document.getElementById('cpPanel').value,
+                system: document.getElementById('cpSystem').value,
+                designer: document.getElementById('cpDesigner').value,
+                meter: document.getElementById('cpMeter').value,
+                circuits: circuits
+            };
+            localStorage.setItem('loadScheduleData', JSON.stringify(data));
+        }
+
+        function loadData() {
+            const json = localStorage.getItem('loadScheduleData');
+            if(json) {
+                try {
+                    const data = JSON.parse(json);
+                    if(data.project) document.getElementById('cpProject').value = data.project;
+                    if(data.panel) document.getElementById('cpPanel').value = data.panel;
+                    if(data.system) document.getElementById('cpSystem').value = data.system;
+                    if(data.designer) document.getElementById('cpDesigner').value = data.designer;
+                    if(data.meter) document.getElementById('cpMeter').value = data.meter;
+                    if(data.circuits && Array.isArray(data.circuits)) circuits = data.circuits;
+                } catch(e) {
+                    console.error('Error loading data', e);
+                }
+            }
+        }
+
+        function exportJSON() {
+            const data = {
+                project: document.getElementById('cpProject').value,
+                panel: document.getElementById('cpPanel').value,
+                system: document.getElementById('cpSystem').value,
+                designer: document.getElementById('cpDesigner').value,
+                meter: document.getElementById('cpMeter').value,
+                circuits: circuits
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `LoadSchedule_${data.project || 'Export'}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if(data.project !== undefined) document.getElementById('cpProject').value = data.project;
+                    if(data.panel !== undefined) document.getElementById('cpPanel').value = data.panel;
+                    if(data.system !== undefined) document.getElementById('cpSystem').value = data.system;
+                    if(data.designer !== undefined) document.getElementById('cpDesigner').value = data.designer;
+                    if(data.meter !== undefined) document.getElementById('cpMeter').value = data.meter;
+                    if(data.circuits && Array.isArray(data.circuits)) circuits = data.circuits;
+                    
+                    toggleSystem();
+                    syncHeaders();
+                    renderTable();
+                    saveData();
+                } catch(err) {
+                    alert('รูปแบบไฟล์ JSON ไม่ถูกต้อง (Invalid JSON format)');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = ''; // Reset input so the same file can be selected again
         }
 
         // Initialize
+        loadData();
         toggleSystem();
         syncHeaders();
         renderTable();
