@@ -8,17 +8,43 @@ import StandardsReference from './components/StandardsReference';
 import SummaryPanel from './components/SummaryPanel';
 import Toolbar, { type ToolbarLabels } from './components/Toolbar';
 import { calculateProject } from './domain/calculations';
-import { legacyDefaultLoadScheduleToProject } from './domain/defaultLoadSchedule';
+import { legacyDefaultLoadScheduleToProject, type LegacyDefaultLoadSchedule } from './domain/defaultLoadSchedule';
 import { createStarterProject } from './domain/presets';
 import { loadDraft, parseImportedProject, saveDraft, serializeProject } from './domain/storage';
 import type { ElectricalProject, Language } from './domain/types';
 import { t } from './i18n/translations';
-import defaultLoadSchedule from '../default-loadschedule.json';
 
 type AppTab = 'calculation' | 'standards';
 
-function loadInitialProject(): ElectricalProject {
-  return loadDraft() ?? legacyDefaultLoadScheduleToProject(defaultLoadSchedule) ?? createStarterProject();
+interface InitialProjectState {
+  project: ElectricalProject;
+  shouldLoadDefault: boolean;
+}
+
+function loadInitialProjectState(): InitialProjectState {
+  const draft = loadDraft();
+
+  if (draft) {
+    return { project: draft, shouldLoadDefault: false };
+  }
+
+  return { project: createStarterProject(), shouldLoadDefault: true };
+}
+
+async function loadPublicDefaultProject(): Promise<ElectricalProject | null> {
+  try {
+    const response = await fetch('/default-loadschedule.json');
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data: unknown = await response.json();
+
+    return legacyDefaultLoadScheduleToProject(data as LegacyDefaultLoadSchedule);
+  } catch {
+    return null;
+  }
 }
 
 function safeFilename(projectName: string): string {
@@ -28,7 +54,9 @@ function safeFilename(projectName: string): string {
 }
 
 function App() {
-  const [project, setProject] = useState<ElectricalProject>(loadInitialProject);
+  const [initialState] = useState<InitialProjectState>(loadInitialProjectState);
+  const [project, setProject] = useState<ElectricalProject>(initialState.project);
+  const [defaultLoadPending, setDefaultLoadPending] = useState(initialState.shouldLoadDefault);
   const [message, setMessage] = useState('');
   const [showSaveLoad, setShowSaveLoad] = useState(false);
   const [activeTab, setActiveTab] = useState<AppTab>('calculation');
@@ -46,8 +74,38 @@ function App() {
   const label = (key: string) => t(language, key);
 
   useEffect(() => {
+    if (defaultLoadPending) {
+      return;
+    }
+
     saveDraft(project);
-  }, [project]);
+  }, [defaultLoadPending, project]);
+
+  useEffect(() => {
+    if (!initialState.shouldLoadDefault) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadDefault() {
+      const defaultProject = await loadPublicDefaultProject();
+
+      if (!cancelled && defaultProject) {
+        setProject(defaultProject);
+      }
+
+      if (!cancelled) {
+        setDefaultLoadPending(false);
+      }
+    }
+
+    void loadDefault();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [initialState.shouldLoadDefault]);
 
   useEffect(() => {
     if (!message) {
