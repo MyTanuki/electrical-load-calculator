@@ -209,6 +209,29 @@ export function baseAmpacity(sqmm: number, method: InstallationMethod): number |
   return exact !== undefined ? table[exact] : null;
 }
 
+/** Smallest conductor size whose derated ampacity is >= the required ampere value. */
+export function minimumWireSizeForAmpacity(
+  requiredAmp: number,
+  method: InstallationMethod,
+  deratingFactor = 1,
+): number | null {
+  if (!Number.isFinite(requiredAmp) || requiredAmp <= 0) {
+    return WIRE_SIZES_SQMM[0];
+  }
+
+  const factor = Number.isFinite(deratingFactor) && deratingFactor > 0 ? deratingFactor : 1;
+
+  for (const size of WIRE_SIZES_SQMM) {
+    const ampacity = baseAmpacity(size, method);
+
+    if (ampacity !== null && ampacity * factor >= requiredAmp) {
+      return size;
+    }
+  }
+
+  return null;
+}
+
 /** Conductor R/X (Ω/km), snapping to the nearest standard size if needed. */
 export function conductorImpedance(sqmm: number): { r: number; x: number } {
   const size = sqmm in CONDUCTOR_R_OHM_PER_KM ? sqmm : nearestWireSize(sqmm);

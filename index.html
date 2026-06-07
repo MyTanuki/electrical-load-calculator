@@ -714,6 +714,15 @@
             return STD_CB[STD_CB.length-1];
         }
 
+        function minimumWireSizeForAmpacity(requiredAmp, settings) {
+            if (!isFinite(requiredAmp) || requiredAmp <= 0) return STD_WIRE[0];
+            for (const w of STD_WIRE) {
+                const iz = deratedAmpacity(w, settings);
+                if (iz !== null && iz >= requiredAmp) return w;
+            }
+            return STD_WIRE[STD_WIRE.length-1];
+        }
+
         // อ่านค่าตั้งต้นจาก control panel (มีค่าเริ่มต้นเมื่อยังไม่มี element)
         function getSettings() {
             const val = (id, def) => {
@@ -847,13 +856,10 @@
             const current = va / 230; // phase voltage (line-to-neutral)
             const designCurrent = current * (continuous ? 1.25 : 1);
 
-            let cbSize = nextStdCB(Math.max(designCurrent, 0.0001));
-            // เลือกสายเส้นเล็กที่สุดที่พิกัดกระแสหลังลดพิกัด >= พิกัด CB
-            let wireSize = STD_WIRE[STD_WIRE.length-1];
-            for (const w of STD_WIRE) {
-                const iz = deratedAmpacity(w, settings);
-                if (iz !== null && iz >= cbSize) { wireSize = w; break; }
-            }
+            const enteredBreaker = isFinite(opts.breakerAmp) ? opts.breakerAmp : parseAmp(opts.breakerAmp);
+            let cbSize = enteredBreaker || nextStdCB(Math.max(designCurrent, 0.0001));
+            const requiredWireAmpacity = Math.max(designCurrent, cbSize);
+            let wireSize = minimumWireSizeForAmpacity(requiredWireAmpacity, settings);
             let gndSize = requiredEgc(cbSize) || 1.5;
 
             // Override minimums for empty rows
@@ -870,25 +876,26 @@
             const current = c.va / 230;
             const designCurrent = current * (continuous ? 1.25 : 1);
 
-            const auto = determineSizes(c.va, { settings: settings, continuous: continuous });
-            const cbAmp = parseAmp(c.cb) || auto.cb;
+            const cbAmp = parseAmp(c.cb);
+            const auto = determineSizes(c.va, { settings: settings, continuous: continuous, breakerAmp: cbAmp });
+            const effectiveCbAmp = cbAmp || auto.cb;
             const wireSqmm = parseWire(c.wire) || auto.wire;
             const gndSqmm = parseWire(c.gnd);
             const iz = deratedAmpacity(wireSqmm, settings);
-            const reqGnd = requiredEgc(cbAmp);
+            const reqGnd = requiredEgc(effectiveCbAmp);
 
             const vdV = voltageDrop(current, lengthM, wireSqmm, pf, 2); // วงจรย่อย 1 เฟส factor 2
             const vdPct = (vdV / 230) * 100;
 
             const warnings = [];
-            if (cbAmp !== null && current > 0 && cbAmp < designCurrent - 1e-6) warnings.push('CB ต่ำกว่ากระแสออกแบบ');
+            if (effectiveCbAmp !== null && current > 0 && effectiveCbAmp < designCurrent - 1e-6) warnings.push('CB ต่ำกว่ากระแสออกแบบ');
             if (iz !== null && current > 0 && iz < current - 1e-6) warnings.push('สายรับกระแสไม่พอ');
-            if (cbAmp !== null && iz !== null && cbAmp > iz + 1e-6) warnings.push('CB เกินพิกัดสาย');
+            if (effectiveCbAmp !== null && iz !== null && effectiveCbAmp > iz + 1e-6) warnings.push('CB เกินพิกัดสาย');
             if (lengthM > 0 && vdPct > settings.branchVD + 1e-9) warnings.push('แรงดันตกเกินเกณฑ์วงจรย่อย');
             if (reqGnd !== null && gndSqmm !== null && gndSqmm < reqGnd - 1e-6) warnings.push('สายดินเล็กกว่ามาตรฐาน');
 
             return {
-                amp: current, designCurrent: designCurrent, cbAmp: cbAmp, wireSqmm: wireSqmm,
+                amp: current, designCurrent: designCurrent, cbAmp: effectiveCbAmp, wireSqmm: wireSqmm,
                 iz: iz, reqGnd: reqGnd, vdV: vdV, vdPct: vdPct, pf: pf, kw: c.va * pf / 1000,
                 warnings: warnings
             };
@@ -1052,7 +1059,8 @@
 
             const settings = getSettings();
             circuits.forEach((c, index) => {
-                const calc = determineSizes(c.va, { settings: settings, continuous: c.continuous !== undefined ? c.continuous : true });
+                const continuous = c.continuous !== undefined ? c.continuous : true;
+                const calc = determineSizes(c.va, { settings: settings, continuous: continuous, breakerAmp: parseAmp(c.cb) });
                 const ev = evaluateCircuit(c, settings);
                 const izTxt = ev.iz !== null ? ev.iz.toFixed(0) : '-';
                 const vdTxt = (c.length > 0) ? ev.vdPct.toFixed(2) + '%' : '-';

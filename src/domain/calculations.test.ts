@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { calculateProject, calculateRow } from './calculations';
 import { DEFAULT_PRESETS, createLoadRow, createStarterProject } from './presets';
+import { minimumWireSizeForAmpacity } from './standards';
 import type { ElectricalProject, LoadRow } from './types';
 
 function loadRow(overrides: Partial<LoadRow> = {}): LoadRow {
@@ -151,6 +152,11 @@ describe('domain calculations', () => {
 });
 
 describe('engineering checks (วสท. standards)', () => {
+  it('selects the minimum conductor size from the actual protective-device rating', () => {
+    expect(minimumWireSizeForAmpacity(16, 'conduit_wall')).toBe(1.5);
+    expect(minimumWireSizeForAmpacity(20, 'conduit_wall')).toBe(2.5);
+  });
+
   it('applies the 1.25x continuous-load factor to the design current', () => {
     const result = calculateRow(
       loadRow({ continuous: true, quantity: 1, vaPerUnit: 2300, voltage: 230, breaker: '16 A', wireSize: '2.5 sq.mm' }),
