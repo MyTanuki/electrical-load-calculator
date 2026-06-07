@@ -10,7 +10,7 @@
       "desc": "Lighting 1",
       "va": 240,
       "phase": "L1",
-      "cb": "16",
+      "cb": "",
       "wire": "2.5"
     },
     {
@@ -18,16 +18,16 @@
       "desc": "Receptacle 1",
       "va": 1500,
       "phase": "L1",
-      "cb": "20",
+      "cb": "",
       "wire": "4",
-      "gnd": "4"
+      "gnd": ""
     },
     {
       "id": 3,
       "desc": "Receptacle 2",
       "va": 1500,
       "phase": "L1",
-      "cb": "20",
+      "cb": "",
       "wire": "4"
     },
     {
@@ -35,7 +35,7 @@
       "desc": "Receptacle 3",
       "va": 1500,
       "phase": "L1",
-      "cb": "20",
+      "cb": "",
       "wire": "4"
     },
     {
@@ -43,44 +43,44 @@
       "desc": "Receptacle 4",
       "va": 2500,
       "phase": "L1",
-      "cb": "20",
+      "cb": "",
       "wire": "4",
-      "gnd": "4"
+      "gnd": ""
     },
     {
       "id": 6,
       "desc": "Receptacle 5",
       "va": 2500,
       "phase": "L1",
-      "cb": "20",
+      "cb": "",
       "wire": "4",
-      "gnd": "4"
+      "gnd": ""
     },
     {
       "id": 7,
       "desc": "Receptacle 6",
       "va": 2500,
       "phase": "L1",
-      "cb": "20",
+      "cb": "",
       "wire": "4",
-      "gnd": "4"
+      "gnd": ""
     },
     {
       "id": 8,
       "desc": "Receptacle 7",
       "va": 2500,
       "phase": "L1",
-      "cb": "20",
+      "cb": "",
       "wire": "4",
-      "gnd": "4"
+      "gnd": ""
     },
     {
       "id": 9,
       "desc": "Receptacle 8",
       "va": 2500,
       "phase": "L1",
-      "cb": "20",
-      "wire": "",
+      "cb": "",
+      "wire": "4",
       "gnd": "",
       "pf": 1,
       "length": 0,
