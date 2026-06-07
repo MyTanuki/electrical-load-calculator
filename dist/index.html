@@ -1,13 +1,1008 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Electrical Load Calculator</title>
-    <script type="module" crossorigin src="/electrical-load-calculator/assets/index-C3NoNERX.js"></script>
-    <link rel="stylesheet" crossorigin href="/electrical-load-calculator/assets/index-C7qlTbI0.css">
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electrical Load Schedule</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1e3a8a; /* Blue 900 */
+            --secondary: #3b82f6; /* Blue 500 */
+            --bg: #f3f4f6; /* Gray 100 */
+            --paper: #ffffff;
+            --text: #1f2937; /* Gray 800 */
+            --border: #d1d5db; /* Gray 300 */
+            --table-border: #000000;
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Prompt', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .control-panel {
+            background: var(--primary);
+            color: white;
+            width: 100%;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: end;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 150px;
+        }
+
+        .input-group label {
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 5px;
+            color: #93c5fd;
+        }
+
+        .input-group input, .input-group select {
+            padding: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 14px;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .input-group input:focus, .input-group select:focus {
+            background: rgba(255,255,255,0.2);
+            border-color: white;
+        }
+        
+        .input-group select option {
+            background: var(--text);
+            color: white;
+        }
+
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 14px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-add {
+            background-color: var(--success);
+            color: white;
+        }
+        .btn-add:hover { background-color: #059669; }
+
+        .btn-print {
+            background-color: #f59e0b; /* Amber 500 */
+            color: white;
+        }
+        .btn-print:hover { background-color: #d97706; }
+
+        .btn-delete {
+            background-color: var(--danger);
+            color: white;
+            padding: 5px 10px;
+            font-size: 12px;
+            border-radius: 4px;
+        }
+        .btn-delete:hover { background-color: #b91c1c; }
+
+        .paper-container {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .paper {
+            background: var(--paper);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            width: 100%;
+            min-width: 900px;
+        }
+
+        .doc-header {
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .doc-header h2 {
+            margin: 0 0 15px 0;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .doc-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            text-align: left;
+            font-size: 14px;
+            gap: 10px;
+            border-top: 2px solid var(--table-border);
+            padding-top: 15px;
+        }
+        
+        .doc-info-grid span {
+            font-weight: 600;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 2px solid var(--table-border);
+            margin-top: 20px;
+            font-size: 13px;
+        }
+
+        th, td {
+            border: 1px solid var(--table-border);
+            padding: 8px 4px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        th {
+            background-color: #f8fafc;
+            font-weight: 600;
+        }
+
+        .table-input {
+            width: 100%;
+            border: 1px solid transparent;
+            text-align: center;
+            font-size: 13px;
+            padding: 4px;
+            background: transparent;
+            font-family: inherit;
+        }
+        
+        .table-input:focus {
+            border: 1px solid var(--secondary);
+            outline: none;
+            background: #eff6ff;
+            border-radius: 4px;
+        }
+
+        .desc-input {
+            text-align: left;
+            width: 100%;
+            min-width: 150px;
+        }
+
+        .phase-dropdown {
+            width: 100%;
+            border: none;
+            background: transparent;
+            text-align: center;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        .phase-dropdown:focus {
+            outline: none;
+        }
+
+        .summary-row {
+            font-weight: 700;
+            background-color: #f8fafc;
+        }
+
+        .main-summary {
+            margin-top: 20px;
+            border: 2px solid var(--table-border);
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            background: #f8fafc;
+        }
+
+        /* Print Styles */
+        @media print {
+            body { background: white; padding: 0; }
+            .no-print { display: none !important; }
+            .paper-container { overflow: visible; }
+            .paper { box-shadow: none; padding: 0; border-radius: 0; }
+            .table-input { border: none !important; background: transparent !important; }
+            .phase-dropdown { appearance: none; -webkit-appearance: none; -moz-appearance: none; }
+            @page { size: A4 landscape; margin: 10mm; }
+        }
+        
+        .hide-col { display: none !important; }
+
+        .analysis-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0fdf4; /* Light green background */
+            border-left: 4px solid var(--success);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .analysis-panel h3 {
+            margin: 0 0 10px 0;
+            color: #166534; /* Dark green */
+            font-size: 15px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="control-panel no-print">
+        <div class="input-group">
+            <label>PROJECT</label>
+            <input type="text" id="cpProject" value="บ้านพักอาศัย 1 ชั้น" oninput="syncHeaders()">
+        </div>
+        <div class="input-group">
+            <label>PANEL NO.</label>
+            <input type="text" id="cpPanel" value="LP-1" oninput="syncHeaders()">
+        </div>
+        <div class="input-group">
+            <label>SYSTEM</label>
+            <select id="cpSystem" style="min-width: 220px;" onchange="toggleSystem(); syncHeaders(); calculate()">
+                <option value="1P" selected>1 Phase 2 Wire 230V</option>
+                <option value="3P">3 Phase 4 Wire 400/230V</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>DESIGNER</label>
+            <input type="text" id="cpDesigner" value="Engineer" oninput="syncHeaders()">
+        </div>
+        <div class="input-group">
+            <label>MAIN CB / METER</label>
+            <input type="text" id="cpMeter" value="PEA 30(100)A" oninput="syncHeaders()">
+        </div>
+        <div class="input-group" style="flex: 1 1 100%; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 10px; margin-top: 5px;">
+            <label style="color:#bfdbfe; font-weight:600;">พารามิเตอร์มาตรฐาน วสท. (Engineering Settings)</label>
+        </div>
+        <div class="input-group">
+            <label>วิธีเดินสาย (Method)</label>
+            <select id="cpMethod" onchange="renderTable()">
+                <option value="conduit_wall" selected>ร้อยท่อฝัง/เกาะผนัง</option>
+                <option value="conduit_air">ร้อยท่อเดินในอากาศ</option>
+                <option value="tray_clipped">เกาะผนัง/รางเคเบิล</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>อุณหภูมิแวดล้อม (°C)</label>
+            <input type="number" id="cpAmbient" value="40" onchange="renderTable()">
+        </div>
+        <div class="input-group">
+            <label>จำนวนวงจรรวมกลุ่ม</label>
+            <input type="number" id="cpGroup" value="1" min="1" onchange="renderTable()">
+        </div>
+        <div class="input-group">
+            <label>Demand Factor (%)</label>
+            <input type="number" id="cpDemand" value="100" onchange="renderTable()">
+        </div>
+        <div class="input-group">
+            <label>เกณฑ์ %VD วงจรย่อย</label>
+            <input type="number" id="cpBranchVD" value="3" onchange="renderTable()">
+        </div>
+        <div class="input-group">
+            <label>เกณฑ์ %VD รวม</label>
+            <input type="number" id="cpTotalVD" value="5" onchange="renderTable()">
+        </div>
+        <div style="display: flex; gap: 10px; width: 100%; flex-wrap: wrap; margin-top: 5px;">
+            <button class="btn btn-add" onclick="addCircuit()">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                เพิ่มวงจร (Add Circuit)
+            </button>
+            <button class="btn btn-print" onclick="window.print()">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                พิมพ์ / PDF (Print)
+            </button>
+            <button class="btn" style="background-color: #374151; color: white;" onclick="exportJSON()">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                Export JSON
+            </button>
+            <button class="btn" style="background-color: #4b5563; color: white;" onclick="document.getElementById('importFile').click()">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                Import JSON
+            </button>
+            <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importJSON(event)">
+        </div>
+    </div>
+
+    <div class="paper-container">
+        <div class="paper">
+            <div class="doc-header">
+                <h2>LOAD SCHEDULE</h2>
+                <div class="doc-info-grid">
+                    <div>Project: <span id="dhProject">บ้านพักอาศัย 2 ชั้น</span></div>
+                    <div>Panel: <span id="dhPanel">LP-1</span></div>
+                    <div>System: <span id="dhSystem">3 Phase 4 Wire 400/230V</span></div>
+                    <div>Designer: <span id="dhDesigner">Engineer</span></div>
+                    <div>Main/Meter: <span id="dhMeter">PEA 15(45)A</span></div>
+                    <div>Date: <span id="dhDate"></span></div>
+                </div>
+            </div>
+
+            <table id="scheduleTable">
+                <thead>
+                    <tr>
+                        <th rowspan="2" style="width: 40px;">CCT.</th>
+                        <th rowspan="2">Description</th>
+                        <th rowspan="2" style="width: 80px;">Load (VA)</th>
+                        <th rowspan="2" style="width: 70px;">Phase</th>
+                        <th colspan="3" class="col-3p">Phase Load (VA)</th>
+                        <th rowspan="2" style="width: 60px;">Amps</th>
+                        <th rowspan="2" style="width: 50px;">PF</th>
+                        <th rowspan="2" style="width: 60px;">ยาว (m)</th>
+                        <th rowspan="2" style="width: 100px;">CB (AT)</th>
+                        <th rowspan="2" style="width: 70px;">CB (AF)</th>
+                        <th rowspan="2" style="width: 60px;">Pole</th>
+                        <th rowspan="2" style="width: 90px;">Wire (sq.mm)</th>
+                        <th rowspan="2" style="width: 90px;">GND (sq.mm)</th>
+                        <th rowspan="2" style="width: 55px;">IZ (A)</th>
+                        <th rowspan="2" style="width: 55px;">%VD</th>
+                        <th rowspan="2" style="width: 70px;">Conduit</th>
+                        <th rowspan="2" style="width: 55px;">สถานะ</th>
+                        <th rowspan="2" class="no-print" style="width: 50px;">Act</th>
+                    </tr>
+                    <tr class="col-3p">
+                        <th style="width: 70px;">L1 (R)</th>
+                        <th style="width: 70px;">L2 (S)</th>
+                        <th style="width: 70px;">L3 (T)</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Rows generated by JS -->
+                </tbody>
+                <tfoot>
+                    <tr class="summary-row">
+                        <td colspan="2" style="text-align: right; padding-right: 15px;">TOTAL</td>
+                        <td id="sumVA">0</td>
+                        <td></td>
+                        <td id="sumL1" class="col-3p">0</td>
+                        <td id="sumL2" class="col-3p">0</td>
+                        <td id="sumL3" class="col-3p">0</td>
+                        <td id="sumAmps">0.0</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td class="no-print"></td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <div class="main-summary">
+                <div>
+                    <strong>Total Connected Load:</strong> <span id="outTotalVA">0</span> VA <br>
+                    <strong>Max Demand Load:</strong> <span id="outDemandVA">0</span> VA <br>
+                    <strong>Total Real Power:</strong> <span id="outTotalKW">0.00</span> kW <br>
+                </div>
+                <div>
+                    <strong>Main Breaker (Calculated):</strong> <span id="outMainCB">0</span> AT<br>
+                    <strong>Main Feeder (Calculated):</strong> <span id="outMainWire"></span> sq.mm<br>
+                    <strong>Max Branch Voltage Drop:</strong> <span id="outMaxVD">0.00</span>% <br>
+                </div>
+                <div class="col-3p">
+                    <strong>Max Unbalance:</strong> <span id="outUnbalance">0.0</span>% <br>
+                    <strong>Neutral Current:</strong> <span id="outNeutral">0.0</span> A <br>
+                </div>
+            </div>
+
+            <div id="analysisPanel" class="analysis-panel">
+                <h3>วิเคราะห์ตามหลักวิศวกรรมศาสตร์ (Engineering Analysis)</h3>
+                <div id="analysisContent">กำลังวิเคราะห์ข้อมูล...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set Date
+        document.getElementById('dhDate').innerText = new Date().toLocaleDateString('th-TH');
+
+        // State
+        let circuits = [
+            { id: 1, desc: 'Lighting 1', va: 800, phase: 'L1', cb: '', wire: '' },
+            { id: 2, desc: 'Receptacle 1', va: 1500, phase: 'L1', cb: '20', wire: '4' },
+            { id: 3, desc: 'Receptacle 2', va: 2000, phase: 'L1', cb: '20', wire: '4' },
+            { id: 4, desc: 'Receptacle 3', va: 2000, phase: 'L1', cb: '20', wire: '4' },
+            { id: 5, desc: 'Receptacle 4', va: 2000, phase: 'L1', cb: '20', wire: '4' },
+            { id: 6, desc: 'Receptacle 5', va: 2000, phase: 'L1', cb: '20', wire: '4' },
+            { id: 7, desc: 'Receptacle 6', va: 2000, phase: 'L1', cb: '20', wire: '4' },
+            { id: 8, desc: 'Receptacle 7', va: 2000, phase: 'L1', cb: '20', wire: '4' }
+        ];
+
+        // ====================================================================
+        //  มาตรฐานการติดตั้งทางไฟฟ้าสำหรับประเทศไทย (วสท./EIT 2564) - reference data
+        //  ค่าต่อไปนี้อ้างอิงโครงสร้างตาราง วสท. (ทองแดง ฉนวน PVC 70C, อุณหภูมิฐาน 40C)
+        //  เพื่อช่วยออกแบบเบื้องต้น โปรดตรวจสอบกับฉบับล่าสุดก่อนก่อสร้างจริง
+        // ====================================================================
+        const STD_CB = [10, 16, 20, 25, 32, 40, 50, 63, 80, 100, 125, 160, 200, 250, 320, 400, 500, 630, 800];
+        const STD_WIRE = [1.5, 2.5, 4, 6, 10, 16, 25, 35, 50, 70, 95, 120, 150, 185, 240, 300];
+
+        // พิกัดกระแสสาย (A) ฐาน 40C ทองแดง PVC แยกตามวิธีติดตั้ง (ตาราง วสท. 5-20/5-21)
+        const BASE_AMPACITY = {
+            conduit_wall: {1.5:16,2.5:22,4:29,6:37,10:51,16:68,25:89,35:110,50:134,70:171,95:207,120:239,150:275,185:314,240:369,300:424},
+            conduit_air:  {1.5:17,2.5:24,4:32,6:41,10:57,16:76,25:101,35:125,50:151,70:192,95:232,120:269,150:309,185:353,240:415,300:477},
+            tray_clipped: {1.5:19,2.5:26,4:35,6:46,10:63,16:85,25:112,35:138,50:168,70:213,95:258,120:299,150:344,185:392,240:461,300:530}
+        };
+
+        // ตารางสายดินบริภัณฑ์ (EGC) ตามพิกัด OCPD (ตาราง วสท. 4-2)
+        const EGC_TABLE = [
+            {max:16,gnd:1.5},{max:20,gnd:2.5},{max:40,gnd:4},{max:70,gnd:6},{max:100,gnd:10},
+            {max:200,gnd:16},{max:400,gnd:25},{max:500,gnd:35},{max:800,gnd:50},{max:1000,gnd:70}
+        ];
+
+        // ความต้านทาน R (โอห์ม/กม.) ทองแดง 70C สำหรับคำนวณแรงดันตก
+        const COND_R = {1.5:14.48,2.5:8.87,4:5.52,6:3.69,10:2.19,16:1.38,25:0.87,35:0.627,50:0.463,70:0.321,95:0.232,120:0.184,150:0.15,185:0.121,240:0.0925,300:0.0745};
+        const COND_X = 0.08; // รีแอกแตนซ์โดยประมาณ (โอห์ม/กม.)
+
+        function ambientFactor(t) {
+            const pts = [[25,1.12],[30,1.08],[35,1.04],[40,1.0],[45,0.91],[50,0.82],[55,0.71],[60,0.58]];
+            if (!isFinite(t)) return 1;
+            if (t <= pts[0][0]) return pts[0][1];
+            if (t >= pts[pts.length-1][0]) return pts[pts.length-1][1];
+            for (let i=0; i<pts.length-1; i++) {
+                if (t >= pts[i][0] && t <= pts[i+1][0]) {
+                    const r = (t-pts[i][0])/(pts[i+1][0]-pts[i][0]);
+                    return pts[i][1] + r*(pts[i+1][1]-pts[i][1]);
+                }
+            }
+            return 1;
+        }
+
+        function groupingFactor(n) {
+            const tbl = {1:1,2:0.8,3:0.7,4:0.65,5:0.6,6:0.57,7:0.54,8:0.52,9:0.5};
+            if (!isFinite(n) || n <= 1) return 1;
+            n = Math.floor(n);
+            return n >= 10 ? 0.45 : (tbl[n] || 1);
+        }
+
+        function requiredEgc(amp) {
+            if (!isFinite(amp) || amp <= 0) return null;
+            for (const e of EGC_TABLE) { if (amp <= e.max) return e.gnd; }
+            return EGC_TABLE[EGC_TABLE.length-1].gnd;
+        }
+
+        function deratedAmpacity(sqmm, settings) {
+            const table = BASE_AMPACITY[settings.method] || BASE_AMPACITY.conduit_wall;
+            if (!(sqmm in table)) return null;
+            return table[sqmm] * ambientFactor(settings.ambient) * groupingFactor(settings.group);
+        }
+
+        function voltageDrop(currentA, lengthM, sqmm, pf, factor) {
+            if (!isFinite(currentA) || !isFinite(lengthM) || lengthM <= 0 || !(sqmm in COND_R)) return 0;
+            const p = (isFinite(pf) && pf > 0) ? Math.min(1, pf) : 1;
+            const sinPhi = Math.sqrt(Math.max(0, 1 - p*p));
+            const z = COND_R[sqmm]*p + COND_X*sinPhi;
+            return (factor * currentA * lengthM * z) / 1000;
+        }
+
+        function parseAmp(text) {
+            if (typeof text !== 'string') return null;
+            const m = text.match(/(\d+(?:\.\d+)?)\s*a\b/i) || text.match(/(\d+(?:\.\d+)?)/);
+            if (!m) return null;
+            const v = parseFloat(m[1]);
+            return (isFinite(v) && v > 0) ? v : null;
+        }
+
+        function parseWire(text) {
+            if (text === null || text === undefined) return null;
+            const m = String(text).match(/(\d+(?:\.\d+)?)/);
+            if (!m) return null;
+            const v = parseFloat(m[1]);
+            return (isFinite(v) && v > 0) ? v : null;
+        }
+
+        function nextStdCB(amp) {
+            for (const s of STD_CB) { if (s >= amp) return s; }
+            return STD_CB[STD_CB.length-1];
+        }
+
+        // อ่านค่าตั้งต้นจาก control panel (มีค่าเริ่มต้นเมื่อยังไม่มี element)
+        function getSettings() {
+            const val = (id, def) => {
+                const el = document.getElementById(id);
+                if (!el) return def;
+                const v = parseFloat(el.value);
+                return isFinite(v) ? v : def;
+            };
+            const methodEl = document.getElementById('cpMethod');
+            return {
+                method: methodEl ? methodEl.value : 'conduit_wall',
+                ambient: val('cpAmbient', 40),
+                group: val('cpGroup', 1),
+                demandFactor: val('cpDemand', 100) / 100,
+                branchVD: val('cpBranchVD', 3),
+                totalVD: val('cpTotalVD', 5)
+            };
+        }
+
+        function syncHeaders() {
+            document.getElementById('dhProject').innerText = document.getElementById('cpProject').value;
+            document.getElementById('dhPanel').innerText = document.getElementById('cpPanel').value;
+            document.getElementById('dhSystem').innerText = document.getElementById('cpSystem').options[document.getElementById('cpSystem').selectedIndex].text;
+            document.getElementById('dhDesigner').innerText = document.getElementById('cpDesigner').value;
+            document.getElementById('dhMeter').innerText = document.getElementById('cpMeter').value;
+            if (typeof saveData === 'function') saveData();
+        }
+
+        function toggleSystem() {
+            const is3P = document.getElementById('cpSystem').value === '3P';
+            document.querySelectorAll('.col-3p').forEach(el => {
+                if (is3P) el.classList.remove('hide-col');
+                else el.classList.add('hide-col');
+            });
+            document.querySelectorAll('.col-1p').forEach(el => {
+                if (!is3P) el.classList.remove('hide-col');
+                else el.classList.add('hide-col');
+            });
+            renderTable();
+        }
+
+        function addCircuit() {
+            const nextPhase = document.getElementById('cpSystem').value === '3P' 
+                ? (['L1','L2','L3'])[circuits.length % 3] 
+                : 'L1';
+            
+            circuits.push({
+                id: circuits.length + 1,
+                desc: 'New Circuit',
+                va: 0,
+                phase: nextPhase,
+                cb: '',
+                wire: '',
+                gnd: '',
+                pf: 1,
+                length: 0,
+                continuous: true
+            });
+            renderTable();
+        }
+
+        function removeCircuit(index) {
+            circuits.splice(index, 1);
+            // Reassign IDs
+            circuits.forEach((c, i) => c.id = i + 1);
+            renderTable();
+        }
+
+        function updateData(index, field, value) {
+            if (field === 'va') {
+                circuits[index][field] = parseInt(value) || 0;
+            } else if (field === 'pf' || field === 'length') {
+                circuits[index][field] = parseFloat(value) || 0;
+            } else {
+                circuits[index][field] = value;
+            }
+            calculate();
+        }
+
+        // แนะนำขนาด CB/สาย/สายดิน ตามมาตรฐาน วสท. โดยพิจารณาโหลดต่อเนื่อง,
+        // วิธีติดตั้ง และการลดพิกัด แล้วเลือกสายที่พิกัดกระแส (หลังลดพิกัด) >= CB
+        function determineSizes(va, opts) {
+            opts = opts || {};
+            const settings = opts.settings || getSettings();
+            const continuous = opts.continuous !== undefined ? opts.continuous : true;
+            const current = va / 230; // phase voltage (line-to-neutral)
+            const designCurrent = current * (continuous ? 1.25 : 1);
+
+            let cbSize = nextStdCB(Math.max(designCurrent, 0.0001));
+            // เลือกสายเส้นเล็กที่สุดที่พิกัดกระแสหลังลดพิกัด >= พิกัด CB
+            let wireSize = STD_WIRE[STD_WIRE.length-1];
+            for (const w of STD_WIRE) {
+                const iz = deratedAmpacity(w, settings);
+                if (iz !== null && iz >= cbSize) { wireSize = w; break; }
+            }
+            let gndSize = requiredEgc(cbSize) || 1.5;
+
+            // Override minimums for empty rows
+            if (va === 0) { cbSize = 16; wireSize = 2.5; gndSize = 2.5; }
+
+            return { amp: current, designCurrent: designCurrent, cb: cbSize, wire: wireSize, gnd: gndSize };
+        }
+
+        // ประเมินวงจรย่อยตามค่าที่ผู้ใช้กรอกจริง คืนค่าพิกัดกระแสสาย, %VD และคำเตือน
+        function evaluateCircuit(c, settings) {
+            const continuous = c.continuous !== undefined ? c.continuous : true;
+            const pf = (isFinite(c.pf) && c.pf > 0) ? Math.min(1, c.pf) : 1;
+            const lengthM = isFinite(c.length) ? c.length : 0;
+            const current = c.va / 230;
+            const designCurrent = current * (continuous ? 1.25 : 1);
+
+            const auto = determineSizes(c.va, { settings: settings, continuous: continuous });
+            const cbAmp = parseAmp(c.cb) || auto.cb;
+            const wireSqmm = parseWire(c.wire) || auto.wire;
+            const gndSqmm = parseWire(c.gnd);
+            const iz = deratedAmpacity(wireSqmm, settings);
+            const reqGnd = requiredEgc(cbAmp);
+
+            const vdV = voltageDrop(current, lengthM, wireSqmm, pf, 2); // วงจรย่อย 1 เฟส factor 2
+            const vdPct = (vdV / 230) * 100;
+
+            const warnings = [];
+            if (cbAmp !== null && current > 0 && cbAmp < designCurrent - 1e-6) warnings.push('CB ต่ำกว่ากระแสออกแบบ');
+            if (iz !== null && current > 0 && iz < current - 1e-6) warnings.push('สายรับกระแสไม่พอ');
+            if (cbAmp !== null && iz !== null && cbAmp > iz + 1e-6) warnings.push('CB เกินพิกัดสาย');
+            if (lengthM > 0 && vdPct > settings.branchVD + 1e-9) warnings.push('แรงดันตกเกินเกณฑ์วงจรย่อย');
+            if (reqGnd !== null && gndSqmm !== null && gndSqmm < reqGnd - 1e-6) warnings.push('สายดินเล็กกว่ามาตรฐาน');
+
+            return {
+                amp: current, designCurrent: designCurrent, cbAmp: cbAmp, wireSqmm: wireSqmm,
+                iz: iz, reqGnd: reqGnd, vdV: vdV, vdPct: vdPct, pf: pf, kw: c.va * pf / 1000,
+                warnings: warnings
+            };
+        }
+
+        function calculate() {
+            let totalVA = 0, sumL1 = 0, sumL2 = 0, sumL3 = 0;
+            const is3P = document.getElementById('cpSystem').value === '3P';
+
+            circuits.forEach(c => {
+                totalVA += c.va;
+                if (is3P) {
+                    if(c.phase === 'L1') sumL1 += c.va;
+                    if(c.phase === 'L2') sumL2 += c.va;
+                    if(c.phase === 'L3') sumL3 += c.va;
+                } else {
+                    c.phase = 'L1';
+                    sumL1 += c.va;
+                }
+            });
+
+            // Update footer
+            document.getElementById('sumVA').innerText = totalVA.toLocaleString();
+            if(is3P) {
+                document.getElementById('sumL1').innerText = sumL1.toLocaleString();
+                document.getElementById('sumL2').innerText = sumL2.toLocaleString();
+                document.getElementById('sumL3').innerText = sumL3.toLocaleString();
+            }
+
+            const totalAmp = is3P ? (totalVA / (Math.sqrt(3) * 400)) : (totalVA / 230);
+            document.getElementById('sumAmps').innerText = totalAmp.toFixed(1);
+
+            // --- Engineering aggregates (kW, demand, VD, neutral, motor) -----
+            const settings = getSettings();
+            let totalKW = 0, maxVD = 0, largestMotorAmp = 0;
+            circuits.forEach(c => {
+                const ev = evaluateCircuit(c, settings);
+                totalKW += ev.kw;
+                if (ev.vdPct > maxVD) maxVD = ev.vdPct;
+                const desc = (c.desc || '').toLowerCase();
+                const isMotor = desc.includes('motor') || desc.includes('มอเตอร์') || desc.includes('pump') || desc.includes('ปั๊ม') || desc.includes('air') || desc.includes('แอร์');
+                if (isMotor) largestMotorAmp = Math.max(largestMotorAmp, ev.amp);
+            });
+
+            const demandVA = totalVA * settings.demandFactor;
+            const demandAmp = is3P ? (demandVA / (Math.sqrt(3) * 400)) : (demandVA / 230);
+
+            // Update Summary
+            document.getElementById('outTotalVA').innerText = totalVA.toLocaleString();
+            document.getElementById('outDemandVA').innerText = Math.round(demandVA).toLocaleString();
+            const setTxt = (id, txt) => { const el = document.getElementById(id); if (el) el.innerText = txt; };
+            setTxt('outTotalKW', (totalKW).toFixed(2));
+            setTxt('outMaxVD', maxVD.toFixed(2));
+
+            // Unbalance (NEMA: max deviation from average) + neutral current
+            if(is3P && totalVA > 0) {
+                const avg = totalVA / 3;
+                const maxDiff = Math.max(Math.abs(sumL1-avg), Math.abs(sumL2-avg), Math.abs(sumL3-avg));
+                document.getElementById('outUnbalance').innerText = ((maxDiff / avg) * 100).toFixed(1);
+                const ia = sumL1/230, ib = sumL2/230, ic = sumL3/230;
+                const inA = Math.sqrt(Math.max(0, ia*ia + ib*ib + ic*ic - ia*ib - ib*ic - ic*ia));
+                setTxt('outNeutral', inA.toFixed(1));
+            } else {
+                document.getElementById('outUnbalance').innerText = "0.0";
+                setTxt('outNeutral', "0.0");
+            }
+
+            // Main breaker: demand current + 25% of largest motor (วสท. largest-motor rule)
+            const feederDesignAmp = demandAmp + 0.25 * largestMotorAmp;
+            const mainCB = nextStdCB(feederDesignAmp * 1.25);
+            let mainWire = STD_WIRE[STD_WIRE.length-1];
+            for (const w of STD_WIRE) {
+                const iz = deratedAmpacity(w, settings);
+                if (iz !== null && iz >= mainCB) { mainWire = w; break; }
+            }
+
+            document.getElementById('outMainCB').innerText = mainCB + (is3P ? " (3P)" : " (2P)");
+            document.getElementById('outMainWire').innerText = mainWire;
+
+            if (typeof saveData === 'function') saveData();
+        }
+
+
+        function calculateAnalysis() {
+            const is3P = document.getElementById('cpSystem').value === '3P';
+            const meterText = document.getElementById('cpMeter').value.toUpperCase();
+            let totalVA = 0;
+            let sumL1 = 0, sumL2 = 0, sumL3 = 0;
+            
+            let lightCount = 0;
+            let recepCount = 0;
+            let acCount = 0;
+            let otherCount = 0;
+
+            circuits.forEach(c => {
+                totalVA += c.va;
+                if(c.phase === 'L1') sumL1 += c.va;
+                if(c.phase === 'L2') sumL2 += c.va;
+                if(c.phase === 'L3') sumL3 += c.va;
+                
+                const desc = c.desc.toLowerCase();
+                if (desc.includes('light') || desc.includes('แสงสว่าง')) lightCount++;
+                else if (desc.includes('recep') || desc.includes('ปลั๊ก') || desc.includes('เต้ารับ')) recepCount++;
+                else if (desc.includes('a/c') || desc.includes('air') || desc.includes('แอร์') || desc.includes('ปรับอากาศ')) acCount++;
+                else otherCount++;
+            });
+
+            const totalAmp = is3P ? (totalVA / (Math.sqrt(3) * 400)) : (totalVA / 230);
+            
+            let analysisHtml = '<ul>';
+            
+            // 1. Total Load & Meter Analysis
+            analysisHtml += `<li><b>ภาพรวมโหลดและการใช้ไฟ:</b> โหลดรวมของระบบคือ <b>${totalVA.toLocaleString()} VA</b> คิดเป็นกระแสไฟฟ้าประมาณ <b>${totalAmp.toFixed(1)} A</b> ${is3P ? 'ต่อเฟส' : ''} </li>`;
+            
+            let meterMax = 0;
+            if (meterText.includes('15(45)')) meterMax = 45;
+            else if (meterText.includes('30(100)')) meterMax = 100;
+            else if (meterText.includes('50(150)')) meterMax = 150;
+
+            if (meterMax > 0) {
+                const utilPercent = (totalAmp / meterMax) * 100;
+                analysisHtml += `<li><b>ความเหมาะสมของมิเตอร์ (${meterText}):</b> กระแสใช้งานคิดเป็น <b>${utilPercent.toFixed(1)}%</b> ของพิกัดสูงสุดของมิเตอร์ `;
+                if (utilPercent < 80) {
+                    analysisHtml += `<span style="color:var(--success);">ซึ่งอยู่ในเกณฑ์ที่ปลอดภัยและเหมาะสม มีพื้นที่รองรับโหลดเพิ่มเติมในอนาคตได้</span></li>`;
+                } else if (utilPercent <= 100) {
+                    analysisHtml += `<span style="color:#ca8a04;">(ค่อนข้างสูง) ควรระมัดระวังการเปิดอุปกรณ์ไฟฟ้าพร้อมกันทั้งหมด หรือพิจารณาขอขยายขนาดมิเตอร์ในอนาคต</span></li>`;
+                } else {
+                    analysisHtml += `<span style="color:var(--danger);"><b>(เกินพิกัดมิเตอร์!)</b> โหลดรวมเกินกว่าที่มิเตอร์จะรองรับได้ จำเป็นต้องลดโหลดหรือขยายขนาดมิเตอร์ทันที</span></li>`;
+                }
+            } else {
+                analysisHtml += `<li><b>ความเหมาะสมของมิเตอร์:</b> ไม่สามารถระบุพิกัดมิเตอร์จากชื่อได้ โปรดตรวจสอบให้แน่ใจว่ามิเตอร์รองรับกระแส ${totalAmp.toFixed(1)} A ได้อย่างปลอดภัย</li>`;
+            }
+
+            // 2. Circuit Distribution Analysis
+            analysisHtml += `<li><b>การกระจายวงจรย่อย (${circuits.length} วงจร):</b> ประกอบด้วย แสงสว่าง ${lightCount} วงจร, เต้ารับ ${recepCount} วงจร, เครื่องปรับอากาศ ${acCount} วงจร และอื่นๆ ${otherCount} วงจร การแยกวงจรเต้ารับและแสงสว่างออกจากกันช่วยเพิ่มความปลอดภัยและความง่ายในการซ่อมบำรุงตามมาตรฐาน วสท.</li>`;
+
+            // 3. Phase Unbalance (If 3-Phase)
+            if (is3P && totalVA > 0) {
+                const avg = totalVA / 3;
+                const maxDiff = Math.max(Math.abs(sumL1-avg), Math.abs(sumL2-avg), Math.abs(sumL3-avg));
+                const unbalance = (maxDiff / avg) * 100;
+                
+                analysisHtml += `<li><b>ความสมดุลของเฟส (Phase Balancing):</b> อัตราความไม่สมดุลอยู่ที่ <b>${unbalance.toFixed(1)}%</b> `;
+                if (unbalance <= 20) {
+                    analysisHtml += `<span style="color:var(--success);">ซึ่งอยู่ในเกณฑ์มาตรฐานที่ดี (ไม่เกิน 20%) ช่วยลดกระแสไหลกลับในสายนิวทรัลและลดความสูญเสียในระบบ</span></li>`;
+                } else {
+                    analysisHtml += `<span style="color:var(--danger);"><b>ซึ่งเกินเกณฑ์มาตรฐาน 20%</b> แนะนำให้สลับเฟสของวงจรย่อยเพื่อเกลี่ยโหลดระหว่าง L1, L2, L3 ให้ใกล้เคียงกันมากขึ้น</span></li>`;
+                }
+            } else if (!is3P) {
+                analysisHtml += `<li><b>ระบบไฟฟ้า 1 เฟส:</b> ไม่มีการจัดสมดุลเฟสเนื่องจากเป็นระบบ 1 เฟส โหลดทั้งหมดจะตกอยู่ที่สายเส้นเดียว ควรตรวจเช็คจุดต่อสายหลักและเมนเบรกเกอร์ให้แน่นหนาเพื่อป้องกันความร้อนสะสม</li>`;
+            }
+
+            analysisHtml += '</ul>';
+            document.getElementById('analysisContent').innerHTML = analysisHtml;
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            const is3P = document.getElementById('cpSystem').value === '3P';
+            tbody.innerHTML = '';
+
+            const settings = getSettings();
+            circuits.forEach((c, index) => {
+                const calc = determineSizes(c.va, { settings: settings, continuous: c.continuous !== undefined ? c.continuous : true });
+                const ev = evaluateCircuit(c, settings);
+                const izTxt = ev.iz !== null ? ev.iz.toFixed(0) : '-';
+                const vdTxt = (c.length > 0) ? ev.vdPct.toFixed(2) + '%' : '-';
+                const vdColor = (c.length > 0 && ev.vdPct > settings.branchVD) ? 'var(--danger)' : 'inherit';
+                const statusHtml = ev.warnings.length > 0
+                    ? `<span title="${ev.warnings.join(' | ')}" style="color:var(--danger);font-weight:700;cursor:help;">&#9888; ${ev.warnings.length}</span>`
+                    : `<span style="color:var(--success);font-weight:700;">&#10003;</span>`;
+
+                const tr = document.createElement('tr');
+                
+                let phaseDropdown = '';
+                if(is3P) {
+                    phaseDropdown = `
+                        <select class="phase-dropdown no-print" style="width:100%" onchange="updateData(${index}, 'phase', this.value); renderTable();">
+                            <option value="L1" ${c.phase === 'L1' ? 'selected' : ''}>L1</option>
+                            <option value="L2" ${c.phase === 'L2' ? 'selected' : ''}>L2</option>
+                            <option value="L3" ${c.phase === 'L3' ? 'selected' : ''}>L3</option>
+                        </select>
+                        <span class="print-only" style="display:none;">${c.phase}</span>
+                    `;
+                } else {
+                    phaseDropdown = `<span>L1</span>`;
+                }
+
+                tr.innerHTML = `
+                    <td>${c.id}</td>
+                    <td><input type="text" class="table-input desc-input" value="${c.desc}" onchange="updateData(${index}, 'desc', this.value)"></td>
+                    <td><input type="number" class="table-input" value="${c.va}" onchange="updateData(${index}, 'va', this.value); renderTable();"></td>
+                    <td style="position:relative;">
+                        ${phaseDropdown}
+                    </td>
+                    <td class="col-3p">${c.phase === 'L1' ? c.va : ''}</td>
+                    <td class="col-3p">${c.phase === 'L2' ? c.va : ''}</td>
+                    <td class="col-3p">${c.phase === 'L3' ? c.va : ''}</td>
+                    <td>${calc.amp.toFixed(1)}</td>
+                    <td><input type="number" step="0.05" min="0" max="1" class="table-input" value="${c.pf !== undefined ? c.pf : 1}" onchange="updateData(${index}, 'pf', this.value); renderTable();"></td>
+                    <td><input type="number" min="0" class="table-input" value="${c.length !== undefined ? c.length : 0}" onchange="updateData(${index}, 'length', this.value); renderTable();"></td>
+                    <td><input type="text" class="table-input" placeholder="${calc.cb}" value="${c.cb}" onchange="updateData(${index}, 'cb', this.value); renderTable();"></td>
+                    <td>50AF</td>
+                    <td>1P</td>
+                    <td><input type="text" class="table-input" placeholder="${calc.wire}" value="${c.wire}" onchange="updateData(${index}, 'wire', this.value); renderTable();"></td>
+                    <td><input type="text" class="table-input" placeholder="${ev.reqGnd || calc.gnd}" value="${c.gnd || ''}" onchange="updateData(${index}, 'gnd', this.value); renderTable();"></td>
+                    <td>${izTxt}</td>
+                    <td style="color:${vdColor};">${vdTxt}</td>
+                    <td>15mm</td>
+                    <td>${statusHtml}</td>
+                    <td class="no-print"><button class="btn-delete" onclick="removeCircuit(${index})">Del</button></td>
+                `;
+
+                tbody.appendChild(tr);
+            });
+
+            calculate();
+            
+            // Force apply CSS visibility logic from JS
+            const is3P_final = document.getElementById('cpSystem').value === '3P';
+            document.querySelectorAll('#tableBody .col-3p').forEach(el => {
+                el.style.display = is3P_final ? 'table-cell' : 'none';
+            });
+            document.querySelectorAll('#tableBody .col-1p').forEach(el => {
+                el.style.display = is3P_final ? 'none' : 'table-cell';
+            });
+            calculateAnalysis();
+        }
+
+        function saveData() {
+            const data = {
+                project: document.getElementById('cpProject').value,
+                panel: document.getElementById('cpPanel').value,
+                system: document.getElementById('cpSystem').value,
+                designer: document.getElementById('cpDesigner').value,
+                meter: document.getElementById('cpMeter').value,
+                circuits: circuits
+            };
+            localStorage.setItem('loadScheduleData', JSON.stringify(data));
+        }
+
+        function applyLoadedData(data) {
+            if(data.project !== undefined) document.getElementById('cpProject').value = data.project;
+            if(data.panel !== undefined) document.getElementById('cpPanel').value = data.panel;
+            if(data.system !== undefined) document.getElementById('cpSystem').value = data.system;
+            if(data.designer !== undefined) document.getElementById('cpDesigner').value = data.designer;
+            if(data.meter !== undefined) document.getElementById('cpMeter').value = data.meter;
+            if(data.circuits && Array.isArray(data.circuits)) circuits = data.circuits;
+        }
+
+        async function loadData() {
+            const json = localStorage.getItem('loadScheduleData');
+            if(json) {
+                try {
+                    const data = JSON.parse(json);
+                    applyLoadedData(data);
+                    return;
+                } catch(e) {
+                    console.error('Error loading data', e);
+                }
+            }
+
+            try {
+                const response = await fetch('default-loadschedule.json');
+                if (response.ok) {
+                    applyLoadedData(await response.json());
+                    return;
+                }
+            } catch(e) {
+                console.warn('Could not fetch default-loadschedule.json (e.g. running locally via file://), falling back.', e);
+            }
+
+            // Last-resort defaults if no saved data exists and the JSON file cannot be fetched.
+            applyLoadedData({
+              "project": "บ้านพักอาศัย 1 ชั้น",
+              "panel": "LP-1",
+              "system": "1P",
+              "designer": "",
+              "meter": "PEA 30(100)A",
+              "circuits": [
+                { "id": 1, "desc": "Lighting 1", "va": 800, "phase": "L1", "cb": "16A", "wire": "2.5" },
+                { "id": 2, "desc": "Receptacle 1", "va": 1500, "phase": "L1", "cb": "20A", "wire": "4" },
+                { "id": 3, "desc": "Receptacle 2", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" },
+                { "id": 4, "desc": "Receptacle 3", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" },
+                { "id": 5, "desc": "Receptacle 4", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" },
+                { "id": 6, "desc": "Receptacle 5", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" },
+                { "id": 7, "desc": "Receptacle 6", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" },
+                { "id": 8, "desc": "Receptacle 7", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" }
+              ]
+            });
+        }
+
+        function exportJSON() {
+            const data = {
+                project: document.getElementById('cpProject').value,
+                panel: document.getElementById('cpPanel').value,
+                system: document.getElementById('cpSystem').value,
+                designer: document.getElementById('cpDesigner').value,
+                meter: document.getElementById('cpMeter').value,
+                circuits: circuits
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `LoadSchedule_${data.project || 'Export'}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if(data.project !== undefined) document.getElementById('cpProject').value = data.project;
+                    if(data.panel !== undefined) document.getElementById('cpPanel').value = data.panel;
+                    if(data.system !== undefined) document.getElementById('cpSystem').value = data.system;
+                    if(data.designer !== undefined) document.getElementById('cpDesigner').value = data.designer;
+                    if(data.meter !== undefined) document.getElementById('cpMeter').value = data.meter;
+                    if(data.circuits && Array.isArray(data.circuits)) circuits = data.circuits;
+                    
+                    toggleSystem();
+                    syncHeaders();
+                    renderTable();
+                    saveData();
+                } catch(err) {
+                    alert('รูปแบบไฟล์ JSON ไม่ถูกต้อง (Invalid JSON format)');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = ''; // Reset input so the same file can be selected again
+        }
+
+        // Initialize the application on load
+        async function initApp() {
+            await loadData();
+            toggleSystem();
+            syncHeaders();
+            renderTable();
+        }
+        initApp();
+    </script>
+</body>
 </html>

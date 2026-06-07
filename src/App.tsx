@@ -7,13 +7,15 @@ import SaveLoadDialog from './components/SaveLoadDialog';
 import SummaryPanel from './components/SummaryPanel';
 import Toolbar, { type ToolbarLabels } from './components/Toolbar';
 import { calculateProject } from './domain/calculations';
+import { legacyDefaultLoadScheduleToProject } from './domain/defaultLoadSchedule';
 import { createStarterProject } from './domain/presets';
 import { loadDraft, parseImportedProject, saveDraft, serializeProject } from './domain/storage';
 import type { ElectricalProject, Language } from './domain/types';
 import { t } from './i18n/translations';
+import defaultLoadSchedule from '../default-loadschedule.json';
 
 function loadInitialProject(): ElectricalProject {
-  return loadDraft() ?? createStarterProject();
+  return loadDraft() ?? legacyDefaultLoadScheduleToProject(defaultLoadSchedule) ?? createStarterProject();
 }
 
 function safeFilename(projectName: string): string {

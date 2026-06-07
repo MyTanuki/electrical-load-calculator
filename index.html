@@ -900,63 +900,55 @@
             localStorage.setItem('loadScheduleData', JSON.stringify(data));
         }
 
+        function applyLoadedData(data) {
+            if(data.project !== undefined) document.getElementById('cpProject').value = data.project;
+            if(data.panel !== undefined) document.getElementById('cpPanel').value = data.panel;
+            if(data.system !== undefined) document.getElementById('cpSystem').value = data.system;
+            if(data.designer !== undefined) document.getElementById('cpDesigner').value = data.designer;
+            if(data.meter !== undefined) document.getElementById('cpMeter').value = data.meter;
+            if(data.circuits && Array.isArray(data.circuits)) circuits = data.circuits;
+        }
+
         async function loadData() {
+            const json = localStorage.getItem('loadScheduleData');
+            if(json) {
+                try {
+                    const data = JSON.parse(json);
+                    applyLoadedData(data);
+                    return;
+                } catch(e) {
+                    console.error('Error loading data', e);
+                }
+            }
+
             try {
-                // Load from default-loadschedule.json first
                 const response = await fetch('default-loadschedule.json');
                 if (response.ok) {
-                    const data = await response.json();
-                    if(data.project !== undefined) document.getElementById('cpProject').value = data.project;
-                    if(data.panel !== undefined) document.getElementById('cpPanel').value = data.panel;
-                    if(data.system !== undefined) document.getElementById('cpSystem').value = data.system;
-                    if(data.designer !== undefined) document.getElementById('cpDesigner').value = data.designer;
-                    if(data.meter !== undefined) document.getElementById('cpMeter').value = data.meter;
-                    if(data.circuits && Array.isArray(data.circuits)) circuits = data.circuits;
-                    return; // Successfully loaded, skip localStorage
+                    applyLoadedData(await response.json());
+                    return;
                 }
             } catch(e) {
                 console.warn('Could not fetch default-loadschedule.json (e.g. running locally via file://), falling back.', e);
             }
 
-            const json = localStorage.getItem('loadScheduleData');
-            if(json) {
-                try {
-                    const data = JSON.parse(json);
-                    if(data.project !== undefined) document.getElementById('cpProject').value = data.project;
-                    if(data.panel !== undefined) document.getElementById('cpPanel').value = data.panel;
-                    if(data.system !== undefined) document.getElementById('cpSystem').value = data.system;
-                    if(data.designer !== undefined) document.getElementById('cpDesigner').value = data.designer;
-                    if(data.meter !== undefined) document.getElementById('cpMeter').value = data.meter;
-                    if(data.circuits && Array.isArray(data.circuits)) circuits = data.circuits;
-                } catch(e) {
-                    console.error('Error loading data', e);
-                }
-            } else {
-                // Default Startup Data
-                const defaultData = {
-                  "project": "บ้านพักอาศัย 1 ชั้น",
-                  "panel": "LP-1",
-                  "system": "1P",
-                  "designer": "",
-                  "meter": "PEA 30(100)A",
-                  "circuits": [
-                    { "id": 1, "desc": "Lighting 1", "va": 800, "phase": "L1", "cb": "16A", "wire": "2.5" },
-                    { "id": 2, "desc": "Receptacle 1", "va": 1500, "phase": "L1", "cb": "20A", "wire": "4" },
-                    { "id": 3, "desc": "Receptacle 2", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" },
-                    { "id": 4, "desc": "Receptacle 3", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" },
-                    { "id": 5, "desc": "Receptacle 4", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" },
-                    { "id": 6, "desc": "Receptacle 5", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" },
-                    { "id": 7, "desc": "Receptacle 6", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" },
-                    { "id": 8, "desc": "Receptacle 7", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" }
-                  ]
-                };
-                document.getElementById('cpProject').value = defaultData.project;
-                document.getElementById('cpPanel').value = defaultData.panel;
-                document.getElementById('cpSystem').value = defaultData.system;
-                document.getElementById('cpDesigner').value = defaultData.designer;
-                document.getElementById('cpMeter').value = defaultData.meter;
-                circuits = defaultData.circuits;
-            }
+            // Last-resort defaults if no saved data exists and the JSON file cannot be fetched.
+            applyLoadedData({
+              "project": "บ้านพักอาศัย 1 ชั้น",
+              "panel": "LP-1",
+              "system": "1P",
+              "designer": "",
+              "meter": "PEA 30(100)A",
+              "circuits": [
+                { "id": 1, "desc": "Lighting 1", "va": 800, "phase": "L1", "cb": "16A", "wire": "2.5" },
+                { "id": 2, "desc": "Receptacle 1", "va": 1500, "phase": "L1", "cb": "20A", "wire": "4" },
+                { "id": 3, "desc": "Receptacle 2", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" },
+                { "id": 4, "desc": "Receptacle 3", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" },
+                { "id": 5, "desc": "Receptacle 4", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" },
+                { "id": 6, "desc": "Receptacle 5", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" },
+                { "id": 7, "desc": "Receptacle 6", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" },
+                { "id": 8, "desc": "Receptacle 7", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" }
+              ]
+            });
         }
 
         function exportJSON() {
