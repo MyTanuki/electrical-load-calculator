@@ -281,6 +281,37 @@
             <label>MAIN CB / METER</label>
             <input type="text" id="cpMeter" value="PEA 30(100)A" oninput="syncHeaders()">
         </div>
+        <div class="input-group" style="flex: 1 1 100%; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 10px; margin-top: 5px;">
+            <label style="color:#bfdbfe; font-weight:600;">พารามิเตอร์มาตรฐาน วสท. (Engineering Settings)</label>
+        </div>
+        <div class="input-group">
+            <label>วิธีเดินสาย (Method)</label>
+            <select id="cpMethod" onchange="renderTable()">
+                <option value="conduit_wall" selected>ร้อยท่อฝัง/เกาะผนัง</option>
+                <option value="conduit_air">ร้อยท่อเดินในอากาศ</option>
+                <option value="tray_clipped">เกาะผนัง/รางเคเบิล</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>อุณหภูมิแวดล้อม (°C)</label>
+            <input type="number" id="cpAmbient" value="40" onchange="renderTable()">
+        </div>
+        <div class="input-group">
+            <label>จำนวนวงจรรวมกลุ่ม</label>
+            <input type="number" id="cpGroup" value="1" min="1" onchange="renderTable()">
+        </div>
+        <div class="input-group">
+            <label>Demand Factor (%)</label>
+            <input type="number" id="cpDemand" value="100" onchange="renderTable()">
+        </div>
+        <div class="input-group">
+            <label>เกณฑ์ %VD วงจรย่อย</label>
+            <input type="number" id="cpBranchVD" value="3" onchange="renderTable()">
+        </div>
+        <div class="input-group">
+            <label>เกณฑ์ %VD รวม</label>
+            <input type="number" id="cpTotalVD" value="5" onchange="renderTable()">
+        </div>
         <div style="display: flex; gap: 10px; width: 100%; flex-wrap: wrap; margin-top: 5px;">
             <button class="btn btn-add" onclick="addCircuit()">
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
@@ -325,12 +356,17 @@
                         <th rowspan="2" style="width: 70px;">Phase</th>
                         <th colspan="3" class="col-3p">Phase Load (VA)</th>
                         <th rowspan="2" style="width: 60px;">Amps</th>
+                        <th rowspan="2" style="width: 50px;">PF</th>
+                        <th rowspan="2" style="width: 60px;">ยาว (m)</th>
                         <th rowspan="2" style="width: 100px;">CB (AT)</th>
                         <th rowspan="2" style="width: 70px;">CB (AF)</th>
                         <th rowspan="2" style="width: 60px;">Pole</th>
-                        <th rowspan="2" style="width: 100px;">Wire (sq.mm)</th>
-                        <th rowspan="2" style="width: 100px;">GND (sq.mm)</th>
-                        <th rowspan="2" style="width: 100px;">Conduit</th>
+                        <th rowspan="2" style="width: 90px;">Wire (sq.mm)</th>
+                        <th rowspan="2" style="width: 90px;">GND (sq.mm)</th>
+                        <th rowspan="2" style="width: 55px;">IZ (A)</th>
+                        <th rowspan="2" style="width: 55px;">%VD</th>
+                        <th rowspan="2" style="width: 70px;">Conduit</th>
+                        <th rowspan="2" style="width: 55px;">สถานะ</th>
                         <th rowspan="2" class="no-print" style="width: 50px;">Act</th>
                     </tr>
                     <tr class="col-3p">
@@ -357,6 +393,10 @@
                         <td></td>
                         <td></td>
                         <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
                         <td class="no-print"></td>
                     </tr>
                 </tfoot>
@@ -365,14 +405,17 @@
             <div class="main-summary">
                 <div>
                     <strong>Total Connected Load:</strong> <span id="outTotalVA">0</span> VA <br>
-                    <strong>Max Demand Load (100%):</strong> <span id="outDemandVA">0</span> VA <br>
+                    <strong>Max Demand Load:</strong> <span id="outDemandVA">0</span> VA <br>
+                    <strong>Total Real Power:</strong> <span id="outTotalKW">0.00</span> kW <br>
                 </div>
                 <div>
                     <strong>Main Breaker (Calculated):</strong> <span id="outMainCB">0</span> AT<br>
                     <strong>Main Feeder (Calculated):</strong> <span id="outMainWire"></span> sq.mm<br>
+                    <strong>Max Branch Voltage Drop:</strong> <span id="outMaxVD">0.00</span>% <br>
                 </div>
                 <div class="col-3p">
                     <strong>Max Unbalance:</strong> <span id="outUnbalance">0.0</span>% <br>
+                    <strong>Neutral Current:</strong> <span id="outNeutral">0.0</span> A <br>
                 </div>
             </div>
 
@@ -399,10 +442,111 @@
             { id: 8, desc: 'Receptacle 7', va: 2000, phase: 'L1', cb: '20', wire: '4' }
         ];
 
-        // Standard Sizes
-        const STD_CB = [10, 16, 20, 25, 32, 40, 50, 63, 80, 100, 125, 160, 200, 250];
-        const STD_WIRE = [1.5, 2.5, 4, 6, 10, 16, 25, 35, 50, 70, 95, 120];
-        const STD_GND = [1.5, 2.5, 2.5, 4, 4, 6, 6, 10, 10, 16, 16, 16]; // roughly corresponding to wire size index
+        // ====================================================================
+        //  มาตรฐานการติดตั้งทางไฟฟ้าสำหรับประเทศไทย (วสท./EIT 2564) - reference data
+        //  ค่าต่อไปนี้อ้างอิงโครงสร้างตาราง วสท. (ทองแดง ฉนวน PVC 70C, อุณหภูมิฐาน 40C)
+        //  เพื่อช่วยออกแบบเบื้องต้น โปรดตรวจสอบกับฉบับล่าสุดก่อนก่อสร้างจริง
+        // ====================================================================
+        const STD_CB = [10, 16, 20, 25, 32, 40, 50, 63, 80, 100, 125, 160, 200, 250, 320, 400, 500, 630, 800];
+        const STD_WIRE = [1.5, 2.5, 4, 6, 10, 16, 25, 35, 50, 70, 95, 120, 150, 185, 240, 300];
+
+        // พิกัดกระแสสาย (A) ฐาน 40C ทองแดง PVC แยกตามวิธีติดตั้ง (ตาราง วสท. 5-20/5-21)
+        const BASE_AMPACITY = {
+            conduit_wall: {1.5:16,2.5:22,4:29,6:37,10:51,16:68,25:89,35:110,50:134,70:171,95:207,120:239,150:275,185:314,240:369,300:424},
+            conduit_air:  {1.5:17,2.5:24,4:32,6:41,10:57,16:76,25:101,35:125,50:151,70:192,95:232,120:269,150:309,185:353,240:415,300:477},
+            tray_clipped: {1.5:19,2.5:26,4:35,6:46,10:63,16:85,25:112,35:138,50:168,70:213,95:258,120:299,150:344,185:392,240:461,300:530}
+        };
+
+        // ตารางสายดินบริภัณฑ์ (EGC) ตามพิกัด OCPD (ตาราง วสท. 4-2)
+        const EGC_TABLE = [
+            {max:16,gnd:1.5},{max:20,gnd:2.5},{max:40,gnd:4},{max:70,gnd:6},{max:100,gnd:10},
+            {max:200,gnd:16},{max:400,gnd:25},{max:500,gnd:35},{max:800,gnd:50},{max:1000,gnd:70}
+        ];
+
+        // ความต้านทาน R (โอห์ม/กม.) ทองแดง 70C สำหรับคำนวณแรงดันตก
+        const COND_R = {1.5:14.48,2.5:8.87,4:5.52,6:3.69,10:2.19,16:1.38,25:0.87,35:0.627,50:0.463,70:0.321,95:0.232,120:0.184,150:0.15,185:0.121,240:0.0925,300:0.0745};
+        const COND_X = 0.08; // รีแอกแตนซ์โดยประมาณ (โอห์ม/กม.)
+
+        function ambientFactor(t) {
+            const pts = [[25,1.12],[30,1.08],[35,1.04],[40,1.0],[45,0.91],[50,0.82],[55,0.71],[60,0.58]];
+            if (!isFinite(t)) return 1;
+            if (t <= pts[0][0]) return pts[0][1];
+            if (t >= pts[pts.length-1][0]) return pts[pts.length-1][1];
+            for (let i=0; i<pts.length-1; i++) {
+                if (t >= pts[i][0] && t <= pts[i+1][0]) {
+                    const r = (t-pts[i][0])/(pts[i+1][0]-pts[i][0]);
+                    return pts[i][1] + r*(pts[i+1][1]-pts[i][1]);
+                }
+            }
+            return 1;
+        }
+
+        function groupingFactor(n) {
+            const tbl = {1:1,2:0.8,3:0.7,4:0.65,5:0.6,6:0.57,7:0.54,8:0.52,9:0.5};
+            if (!isFinite(n) || n <= 1) return 1;
+            n = Math.floor(n);
+            return n >= 10 ? 0.45 : (tbl[n] || 1);
+        }
+
+        function requiredEgc(amp) {
+            if (!isFinite(amp) || amp <= 0) return null;
+            for (const e of EGC_TABLE) { if (amp <= e.max) return e.gnd; }
+            return EGC_TABLE[EGC_TABLE.length-1].gnd;
+        }
+
+        function deratedAmpacity(sqmm, settings) {
+            const table = BASE_AMPACITY[settings.method] || BASE_AMPACITY.conduit_wall;
+            if (!(sqmm in table)) return null;
+            return table[sqmm] * ambientFactor(settings.ambient) * groupingFactor(settings.group);
+        }
+
+        function voltageDrop(currentA, lengthM, sqmm, pf, factor) {
+            if (!isFinite(currentA) || !isFinite(lengthM) || lengthM <= 0 || !(sqmm in COND_R)) return 0;
+            const p = (isFinite(pf) && pf > 0) ? Math.min(1, pf) : 1;
+            const sinPhi = Math.sqrt(Math.max(0, 1 - p*p));
+            const z = COND_R[sqmm]*p + COND_X*sinPhi;
+            return (factor * currentA * lengthM * z) / 1000;
+        }
+
+        function parseAmp(text) {
+            if (typeof text !== 'string') return null;
+            const m = text.match(/(\d+(?:\.\d+)?)\s*a\b/i) || text.match(/(\d+(?:\.\d+)?)/);
+            if (!m) return null;
+            const v = parseFloat(m[1]);
+            return (isFinite(v) && v > 0) ? v : null;
+        }
+
+        function parseWire(text) {
+            if (text === null || text === undefined) return null;
+            const m = String(text).match(/(\d+(?:\.\d+)?)/);
+            if (!m) return null;
+            const v = parseFloat(m[1]);
+            return (isFinite(v) && v > 0) ? v : null;
+        }
+
+        function nextStdCB(amp) {
+            for (const s of STD_CB) { if (s >= amp) return s; }
+            return STD_CB[STD_CB.length-1];
+        }
+
+        // อ่านค่าตั้งต้นจาก control panel (มีค่าเริ่มต้นเมื่อยังไม่มี element)
+        function getSettings() {
+            const val = (id, def) => {
+                const el = document.getElementById(id);
+                if (!el) return def;
+                const v = parseFloat(el.value);
+                return isFinite(v) ? v : def;
+            };
+            const methodEl = document.getElementById('cpMethod');
+            return {
+                method: methodEl ? methodEl.value : 'conduit_wall',
+                ambient: val('cpAmbient', 40),
+                group: val('cpGroup', 1),
+                demandFactor: val('cpDemand', 100) / 100,
+                branchVD: val('cpBranchVD', 3),
+                totalVD: val('cpTotalVD', 5)
+            };
+        }
 
         function syncHeaders() {
             document.getElementById('dhProject').innerText = document.getElementById('cpProject').value;
@@ -438,7 +582,10 @@
                 phase: nextPhase,
                 cb: '',
                 wire: '',
-                gnd: ''
+                gnd: '',
+                pf: 1,
+                length: 0,
+                continuous: true
             });
             renderTable();
         }
@@ -453,44 +600,68 @@
         function updateData(index, field, value) {
             if (field === 'va') {
                 circuits[index][field] = parseInt(value) || 0;
+            } else if (field === 'pf' || field === 'length') {
+                circuits[index][field] = parseFloat(value) || 0;
             } else {
                 circuits[index][field] = value;
             }
             calculate();
         }
 
-        function determineSizes(va) {
-            const current = va / 230; // phase voltage
-            const designCurrent = current * 1.25; // 125% safety factor for CB
-            
-            let cbSize = 10;
-            let wireSize = 1.5;
-            let gndSize = 1.5;
+        // แนะนำขนาด CB/สาย/สายดิน ตามมาตรฐาน วสท. โดยพิจารณาโหลดต่อเนื่อง,
+        // วิธีติดตั้ง และการลดพิกัด แล้วเลือกสายที่พิกัดกระแส (หลังลดพิกัด) >= CB
+        function determineSizes(va, opts) {
+            opts = opts || {};
+            const settings = opts.settings || getSettings();
+            const continuous = opts.continuous !== undefined ? opts.continuous : true;
+            const current = va / 230; // phase voltage (line-to-neutral)
+            const designCurrent = current * (continuous ? 1.25 : 1);
 
-            // Find matching CB
-            for(let i=0; i<STD_CB.length; i++) {
-                if(STD_CB[i] >= designCurrent) {
-                    cbSize = STD_CB[i];
-                    // Map to wire (simplified lookup based on CB size)
-                    // 10A->1.5, 16A->2.5, 20A->4, 25/32A->6, 40A->10, 50A->16, 63A->25, 80A->35, 100A->50
-                    if (cbSize <= 10) { wireSize = 1.5; gndSize = 1.5; }
-                    else if (cbSize <= 16) { wireSize = 2.5; gndSize = 2.5; }
-                    else if (cbSize <= 20) { wireSize = 4; gndSize = 2.5; }
-                    else if (cbSize <= 32) { wireSize = 6; gndSize = 4; }
-                    else if (cbSize <= 40) { wireSize = 10; gndSize = 4; }
-                    else if (cbSize <= 50) { wireSize = 16; gndSize = 6; }
-                    else if (cbSize <= 63) { wireSize = 25; gndSize = 6; }
-                    else if (cbSize <= 80) { wireSize = 35; gndSize = 10; }
-                    else if (cbSize <= 100) { wireSize = 50; gndSize = 10; }
-                    else { wireSize = 70; gndSize = 16; }
-                    break;
-                }
+            let cbSize = nextStdCB(Math.max(designCurrent, 0.0001));
+            // เลือกสายเส้นเล็กที่สุดที่พิกัดกระแสหลังลดพิกัด >= พิกัด CB
+            let wireSize = STD_WIRE[STD_WIRE.length-1];
+            for (const w of STD_WIRE) {
+                const iz = deratedAmpacity(w, settings);
+                if (iz !== null && iz >= cbSize) { wireSize = w; break; }
             }
-            
-            // Override minimums
-            if (va === 0) { cbSize = 16; wireSize = 2.5; gndSize = 2.5; } // Default empty
+            let gndSize = requiredEgc(cbSize) || 1.5;
 
-            return { amp: current, cb: cbSize, wire: wireSize, gnd: gndSize };
+            // Override minimums for empty rows
+            if (va === 0) { cbSize = 16; wireSize = 2.5; gndSize = 2.5; }
+
+            return { amp: current, designCurrent: designCurrent, cb: cbSize, wire: wireSize, gnd: gndSize };
+        }
+
+        // ประเมินวงจรย่อยตามค่าที่ผู้ใช้กรอกจริง คืนค่าพิกัดกระแสสาย, %VD และคำเตือน
+        function evaluateCircuit(c, settings) {
+            const continuous = c.continuous !== undefined ? c.continuous : true;
+            const pf = (isFinite(c.pf) && c.pf > 0) ? Math.min(1, c.pf) : 1;
+            const lengthM = isFinite(c.length) ? c.length : 0;
+            const current = c.va / 230;
+            const designCurrent = current * (continuous ? 1.25 : 1);
+
+            const auto = determineSizes(c.va, { settings: settings, continuous: continuous });
+            const cbAmp = parseAmp(c.cb) || auto.cb;
+            const wireSqmm = parseWire(c.wire) || auto.wire;
+            const gndSqmm = parseWire(c.gnd);
+            const iz = deratedAmpacity(wireSqmm, settings);
+            const reqGnd = requiredEgc(cbAmp);
+
+            const vdV = voltageDrop(current, lengthM, wireSqmm, pf, 2); // วงจรย่อย 1 เฟส factor 2
+            const vdPct = (vdV / 230) * 100;
+
+            const warnings = [];
+            if (cbAmp !== null && current > 0 && cbAmp < designCurrent - 1e-6) warnings.push('CB ต่ำกว่ากระแสออกแบบ');
+            if (iz !== null && current > 0 && iz < current - 1e-6) warnings.push('สายรับกระแสไม่พอ');
+            if (cbAmp !== null && iz !== null && cbAmp > iz + 1e-6) warnings.push('CB เกินพิกัดสาย');
+            if (lengthM > 0 && vdPct > settings.branchVD + 1e-9) warnings.push('แรงดันตกเกินเกณฑ์วงจรย่อย');
+            if (reqGnd !== null && gndSqmm !== null && gndSqmm < reqGnd - 1e-6) warnings.push('สายดินเล็กกว่ามาตรฐาน');
+
+            return {
+                amp: current, designCurrent: designCurrent, cbAmp: cbAmp, wireSqmm: wireSqmm,
+                iz: iz, reqGnd: reqGnd, vdV: vdV, vdPct: vdPct, pf: pf, kw: c.va * pf / 1000,
+                warnings: warnings
+            };
         }
 
         function calculate() {
@@ -520,40 +691,53 @@
             const totalAmp = is3P ? (totalVA / (Math.sqrt(3) * 400)) : (totalVA / 230);
             document.getElementById('sumAmps').innerText = totalAmp.toFixed(1);
 
+            // --- Engineering aggregates (kW, demand, VD, neutral, motor) -----
+            const settings = getSettings();
+            let totalKW = 0, maxVD = 0, largestMotorAmp = 0;
+            circuits.forEach(c => {
+                const ev = evaluateCircuit(c, settings);
+                totalKW += ev.kw;
+                if (ev.vdPct > maxVD) maxVD = ev.vdPct;
+                const desc = (c.desc || '').toLowerCase();
+                const isMotor = desc.includes('motor') || desc.includes('มอเตอร์') || desc.includes('pump') || desc.includes('ปั๊ม') || desc.includes('air') || desc.includes('แอร์');
+                if (isMotor) largestMotorAmp = Math.max(largestMotorAmp, ev.amp);
+            });
+
+            const demandVA = totalVA * settings.demandFactor;
+            const demandAmp = is3P ? (demandVA / (Math.sqrt(3) * 400)) : (demandVA / 230);
+
             // Update Summary
             document.getElementById('outTotalVA').innerText = totalVA.toLocaleString();
-            document.getElementById('outDemandVA').innerText = totalVA.toLocaleString();
-            
-            // Unbalance
+            document.getElementById('outDemandVA').innerText = Math.round(demandVA).toLocaleString();
+            const setTxt = (id, txt) => { const el = document.getElementById(id); if (el) el.innerText = txt; };
+            setTxt('outTotalKW', (totalKW).toFixed(2));
+            setTxt('outMaxVD', maxVD.toFixed(2));
+
+            // Unbalance (NEMA: max deviation from average) + neutral current
             if(is3P && totalVA > 0) {
                 const avg = totalVA / 3;
                 const maxDiff = Math.max(Math.abs(sumL1-avg), Math.abs(sumL2-avg), Math.abs(sumL3-avg));
                 document.getElementById('outUnbalance').innerText = ((maxDiff / avg) * 100).toFixed(1);
+                const ia = sumL1/230, ib = sumL2/230, ic = sumL3/230;
+                const inA = Math.sqrt(Math.max(0, ia*ia + ib*ib + ic*ic - ia*ib - ib*ic - ic*ia));
+                setTxt('outNeutral', inA.toFixed(1));
             } else {
                 document.getElementById('outUnbalance').innerText = "0.0";
+                setTxt('outNeutral', "0.0");
             }
 
-            // Main Size calculation
-            let mainCB = 16; let mainWire = 2.5;
-            for(let i=0; i<STD_CB.length; i++) {
-                if(STD_CB[i] >= totalAmp * 1.25) {
-                    mainCB = STD_CB[i];
-                    break;
-                }
+            // Main breaker: demand current + 25% of largest motor (วสท. largest-motor rule)
+            const feederDesignAmp = demandAmp + 0.25 * largestMotorAmp;
+            const mainCB = nextStdCB(feederDesignAmp * 1.25);
+            let mainWire = STD_WIRE[STD_WIRE.length-1];
+            for (const w of STD_WIRE) {
+                const iz = deratedAmpacity(w, settings);
+                if (iz !== null && iz >= mainCB) { mainWire = w; break; }
             }
-            if(mainCB <= 16) mainWire = 4;
-            else if (mainCB <= 20) mainWire = 4;
-            else if (mainCB <= 32) mainWire = 6;
-            else if (mainCB <= 40) mainWire = 10;
-            else if (mainCB <= 50) mainWire = 16;
-            else if (mainCB <= 63) mainWire = 25;
-            else if (mainCB <= 80) mainWire = 35;
-            else if (mainCB <= 100) mainWire = 50;
-            else mainWire = 70;
 
             document.getElementById('outMainCB').innerText = mainCB + (is3P ? " (3P)" : " (2P)");
             document.getElementById('outMainWire').innerText = mainWire;
-            
+
             if (typeof saveData === 'function') saveData();
         }
 
@@ -636,10 +820,16 @@
             const is3P = document.getElementById('cpSystem').value === '3P';
             tbody.innerHTML = '';
 
+            const settings = getSettings();
             circuits.forEach((c, index) => {
-                const calc = determineSizes(c.va);
-                const displayCB = c.cb ? c.cb : calc.cb;
-                const displayWire = c.wire ? c.wire : calc.wire;
+                const calc = determineSizes(c.va, { settings: settings, continuous: c.continuous !== undefined ? c.continuous : true });
+                const ev = evaluateCircuit(c, settings);
+                const izTxt = ev.iz !== null ? ev.iz.toFixed(0) : '-';
+                const vdTxt = (c.length > 0) ? ev.vdPct.toFixed(2) + '%' : '-';
+                const vdColor = (c.length > 0 && ev.vdPct > settings.branchVD) ? 'var(--danger)' : 'inherit';
+                const statusHtml = ev.warnings.length > 0
+                    ? `<span title="${ev.warnings.join(' | ')}" style="color:var(--danger);font-weight:700;cursor:help;">&#9888; ${ev.warnings.length}</span>`
+                    : `<span style="color:var(--success);font-weight:700;">&#10003;</span>`;
 
                 const tr = document.createElement('tr');
                 
@@ -668,12 +858,17 @@
                     <td class="col-3p">${c.phase === 'L2' ? c.va : ''}</td>
                     <td class="col-3p">${c.phase === 'L3' ? c.va : ''}</td>
                     <td>${calc.amp.toFixed(1)}</td>
-                    <td><input type="text" class="table-input" placeholder="${calc.cb}" value="${c.cb}" onchange="updateData(${index}, 'cb', this.value)"></td>
+                    <td><input type="number" step="0.05" min="0" max="1" class="table-input" value="${c.pf !== undefined ? c.pf : 1}" onchange="updateData(${index}, 'pf', this.value); renderTable();"></td>
+                    <td><input type="number" min="0" class="table-input" value="${c.length !== undefined ? c.length : 0}" onchange="updateData(${index}, 'length', this.value); renderTable();"></td>
+                    <td><input type="text" class="table-input" placeholder="${calc.cb}" value="${c.cb}" onchange="updateData(${index}, 'cb', this.value); renderTable();"></td>
                     <td>50AF</td>
                     <td>1P</td>
-                    <td><input type="text" class="table-input" placeholder="${calc.wire}" value="${c.wire}" onchange="updateData(${index}, 'wire', this.value)"></td>
-                    <td><input type="text" class="table-input" placeholder="${calc.gnd}" value="${c.gnd || ''}" onchange="updateData(${index}, 'gnd', this.value)"></td>
+                    <td><input type="text" class="table-input" placeholder="${calc.wire}" value="${c.wire}" onchange="updateData(${index}, 'wire', this.value); renderTable();"></td>
+                    <td><input type="text" class="table-input" placeholder="${ev.reqGnd || calc.gnd}" value="${c.gnd || ''}" onchange="updateData(${index}, 'gnd', this.value); renderTable();"></td>
+                    <td>${izTxt}</td>
+                    <td style="color:${vdColor};">${vdTxt}</td>
                     <td>15mm</td>
+                    <td>${statusHtml}</td>
                     <td class="no-print"><button class="btn-delete" onclick="removeCircuit(${index})">Del</button></td>
                 `;
 
@@ -808,7 +1003,7 @@
             event.target.value = ''; // Reset input so the same file can be selected again
         }
 
-        // Initialize
+        // Initialize the application on load
         async function initApp() {
             await loadData();
             toggleSystem();

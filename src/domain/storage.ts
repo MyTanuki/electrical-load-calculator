@@ -1,4 +1,17 @@
-import type { ElectricalProject, LoadPreset, LoadRow, ProjectInfo, SystemSettings } from './types';
+import type {
+  ElectricalProject,
+  InstallationMethod,
+  LoadPreset,
+  LoadRow,
+  ProjectInfo,
+  SystemSettings,
+} from './types';
+import { INSTALLATION_METHODS } from './standards';
+
+/** Latest schema version produced by this app. */
+const CURRENT_SCHEMA_VERSION = 2 as const;
+/** Schema versions this app can read (older ones are migrated forward). */
+const SUPPORTED_SCHEMA_VERSIONS = [1, 2];
 
 export type ImportErrorKey = 'error.invalidJson' | 'error.unsupportedSchema' | 'error.invalidProject';
 
@@ -111,7 +124,8 @@ function isLoadRow(value: unknown): value is LoadRow {
 function isElectricalProject(value: unknown): value is ElectricalProject {
   return (
     isRecord(value) &&
-    value.schemaVersion === 1 &&
+    typeof value.schemaVersion === 'number' &&
+    SUPPORTED_SCHEMA_VERSIONS.includes(value.schemaVersion) &&
     (value.language === 'en' || value.language === 'th') &&
     isProjectInfo(value.projectInfo) &&
     isSystemSettings(value.systemSettings) &&
@@ -122,6 +136,76 @@ function isElectricalProject(value: unknown): value is ElectricalProject {
     isString(value.createdAt) &&
     isString(value.updatedAt)
   );
+}
+
+function numberOr(value: unknown, fallback: number): number {
+  return isNumber(value) ? value : fallback;
+}
+
+function booleanOr(value: unknown, fallback: boolean): boolean {
+  return typeof value === 'boolean' ? value : fallback;
+}
+
+function stringOr(value: unknown, fallback: string): string {
+  return isString(value) ? value : fallback;
+}
+
+function installationMethodOr(value: unknown, fallback: InstallationMethod): InstallationMethod {
+  return INSTALLATION_METHODS.includes(value as InstallationMethod)
+    ? (value as InstallationMethod)
+    : fallback;
+}
+
+/**
+ * Fill any fields added after schema v1 with sensible defaults so older saved
+ * projects keep working, then stamp the current schema version.
+ */
+function migrateProject(project: ElectricalProject): ElectricalProject {
+  const raw = project as unknown as Record<string, unknown>;
+  const rawSettings = (raw.systemSettings ?? {}) as Record<string, unknown>;
+
+  const systemSettings: SystemSettings = {
+    voltageSinglePhase: project.systemSettings.voltageSinglePhase,
+    voltageThreePhase: project.systemSettings.voltageThreePhase,
+    defaultDemandFactor: project.systemSettings.defaultDemandFactor,
+    unbalanceWarningPercent: project.systemSettings.unbalanceWarningPercent,
+    installationMethod: installationMethodOr(rawSettings.installationMethod, 'conduit_wall'),
+    ambientTempC: numberOr(rawSettings.ambientTempC, 40),
+    conductorsInGroup: numberOr(rawSettings.conductorsInGroup, 1),
+    branchVoltageDropLimitPercent: numberOr(rawSettings.branchVoltageDropLimitPercent, 3),
+    totalVoltageDropLimitPercent: numberOr(rawSettings.totalVoltageDropLimitPercent, 5),
+    feederDemandFactor: numberOr(rawSettings.feederDemandFactor, 1),
+  };
+
+  const presets: LoadPreset[] = project.presets.map((preset) => {
+    const rawPreset = preset as unknown as Record<string, unknown>;
+    return {
+      ...preset,
+      defaultPowerFactor: numberOr(rawPreset.defaultPowerFactor, 1),
+      defaultContinuous: booleanOr(rawPreset.defaultContinuous, false),
+      isMotor: booleanOr(rawPreset.isMotor, false),
+    };
+  });
+
+  const rows: LoadRow[] = project.rows.map((row) => {
+    const rawRow = row as unknown as Record<string, unknown>;
+    return {
+      ...row,
+      powerFactor: numberOr(rawRow.powerFactor, 1),
+      lengthM: numberOr(rawRow.lengthM, 0),
+      continuous: booleanOr(rawRow.continuous, false),
+      isMotor: booleanOr(rawRow.isMotor, false),
+      groundSize: stringOr(rawRow.groundSize, ''),
+    };
+  });
+
+  return {
+    ...project,
+    schemaVersion: CURRENT_SCHEMA_VERSION,
+    systemSettings,
+    presets,
+    rows,
+  };
 }
 
 function readProject(key: string): ElectricalProject | null {
@@ -180,7 +264,11 @@ export function parseImportedProject(content: string): ImportedProjectResult {
     return { ok: false, errorKey: 'error.invalidJson' };
   }
 
-  if (!isRecord(parsed) || parsed.schemaVersion !== 1) {
+  if (
+    !isRecord(parsed) ||
+    typeof parsed.schemaVersion !== 'number' ||
+    !SUPPORTED_SCHEMA_VERSIONS.includes(parsed.schemaVersion)
+  ) {
     return { ok: false, errorKey: 'error.unsupportedSchema' };
   }
 
@@ -188,7 +276,7 @@ export function parseImportedProject(content: string): ImportedProjectResult {
     return { ok: false, errorKey: 'error.invalidProject' };
   }
 
-  return { ok: true, project: parsed };
+  return { ok: true, project: migrateProject(parsed) };
 }
 
 export function saveDraft(project: ElectricalProject): void {

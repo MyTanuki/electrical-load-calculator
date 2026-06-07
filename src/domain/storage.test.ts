@@ -32,7 +32,7 @@ describe('domain storage', () => {
     localStorage.clear();
   });
 
-  it('serializes and parses a valid schema version 1 project', () => {
+  it('serializes and parses a valid current-schema project', () => {
     const original = project();
     const content = serializeProject(original);
 
@@ -51,13 +51,46 @@ describe('domain storage', () => {
   });
 
   it('rejects unsupported schema versions', () => {
-    expect(parseImportedProject(JSON.stringify({ ...project(), schemaVersion: 2 }))).toEqual({
+    expect(parseImportedProject(JSON.stringify({ ...project(), schemaVersion: 99 }))).toEqual({
       ok: false,
       errorKey: 'error.unsupportedSchema',
     });
   });
 
-  it('rejects schema version 1 objects missing required arrays', () => {
+  it('migrates a legacy schema version 1 project to the current schema', () => {
+    const current = project();
+    const legacy = {
+      ...current,
+      schemaVersion: 1,
+      systemSettings: {
+        voltageSinglePhase: 230,
+        voltageThreePhase: 400,
+        defaultDemandFactor: 1,
+        unbalanceWarningPercent: 15,
+      },
+      presets: current.presets.map(
+        ({ defaultPowerFactor: _pf, defaultContinuous: _c, isMotor: _m, ...rest }) => rest,
+      ),
+      rows: current.rows.map(
+        ({ powerFactor: _pf, lengthM: _l, continuous: _c, isMotor: _m, groundSize: _g, ...rest }) => rest,
+      ),
+    };
+
+    const result = parseImportedProject(JSON.stringify(legacy));
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.project.schemaVersion).toBe(2);
+      expect(result.project.systemSettings.installationMethod).toBe('conduit_wall');
+      expect(result.project.systemSettings.ambientTempC).toBe(40);
+      expect(result.project.systemSettings.feederDemandFactor).toBe(1);
+      expect(result.project.rows[0].powerFactor).toBe(1);
+      expect(result.project.rows[0].continuous).toBe(false);
+      expect(result.project.rows[0].groundSize).toBe('');
+    }
+  });
+
+  it('rejects schema version objects missing required arrays', () => {
     const missingArrays = { ...project(), presets: undefined, rows: undefined };
 
     expect(parseImportedProject(JSON.stringify(missingArrays))).toEqual({

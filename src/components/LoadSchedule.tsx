@@ -9,8 +9,8 @@ interface LoadScheduleProps {
   onChange: (project: ElectricalProject) => void;
 }
 
-type TextField = 'circuitNo' | 'description' | 'breaker' | 'wireSize' | 'notes';
-type NumberField = 'quantity' | 'vaPerUnit' | 'demandFactor' | 'voltage';
+type TextField = 'circuitNo' | 'description' | 'breaker' | 'wireSize' | 'groundSize' | 'notes';
+type NumberField = 'quantity' | 'vaPerUnit' | 'demandFactor' | 'voltage' | 'powerFactor' | 'lengthM';
 
 function LoadSchedule({ project, label, onChange }: LoadScheduleProps) {
   function updateRows(rows: LoadRow[]) {
@@ -48,11 +48,25 @@ function LoadSchedule({ project, label, onChange }: LoadScheduleProps) {
     };
   }
 
-  function handleLoadTypeChange(rowId: string) {
-    return (event: ChangeEvent<HTMLSelectElement>) => {
+  function handleContinuousChange(rowId: string) {
+    return (event: ChangeEvent<HTMLInputElement>) => {
       updateRow(rowId, (row) => ({
         ...row,
-        loadTypeId: event.currentTarget.value,
+        continuous: event.currentTarget.checked,
+      }));
+    };
+  }
+
+  function handleLoadTypeChange(rowId: string) {
+    return (event: ChangeEvent<HTMLSelectElement>) => {
+      const loadTypeId = event.currentTarget.value;
+      const preset = project.presets.find((candidate) => candidate.id === loadTypeId);
+
+      updateRow(rowId, (row) => ({
+        ...row,
+        loadTypeId,
+        // Keep the motor flag in sync so the largest-motor feeder rule applies.
+        isMotor: preset?.isMotor ?? row.isMotor,
       }));
     };
   }
@@ -115,8 +129,12 @@ function LoadSchedule({ project, label, onChange }: LoadScheduleProps) {
             <th>{label('vaPerUnit')}</th>
             <th>{label('demandFactor')}</th>
             <th>{label('voltage')}</th>
+            <th>{label('powerFactor')}</th>
             <th>{label('breaker')}</th>
             <th>{label('wireSize')}</th>
+            <th>{label('groundSize')}</th>
+            <th>{label('lengthM')}</th>
+            <th>{label('continuous')}</th>
             <th>{label('notes')}</th>
             <th>{label('rowActions')}</th>
           </tr>
@@ -201,6 +219,17 @@ function LoadSchedule({ project, label, onChange }: LoadScheduleProps) {
               </td>
               <td>
                 <input
+                  aria-label={label('powerFactor')}
+                  type="number"
+                  step="0.05"
+                  min="0"
+                  max="1"
+                  value={row.powerFactor}
+                  onChange={handleNumberChange(row.id, 'powerFactor')}
+                />
+              </td>
+              <td>
+                <input
                   aria-label={label('breaker')}
                   type="text"
                   value={row.breaker}
@@ -213,6 +242,31 @@ function LoadSchedule({ project, label, onChange }: LoadScheduleProps) {
                   type="text"
                   value={row.wireSize}
                   onChange={handleTextChange(row.id, 'wireSize')}
+                />
+              </td>
+              <td>
+                <input
+                  aria-label={label('groundSize')}
+                  type="text"
+                  value={row.groundSize}
+                  onChange={handleTextChange(row.id, 'groundSize')}
+                />
+              </td>
+              <td>
+                <input
+                  aria-label={label('lengthM')}
+                  type="number"
+                  min="0"
+                  value={row.lengthM}
+                  onChange={handleNumberChange(row.id, 'lengthM')}
+                />
+              </td>
+              <td>
+                <input
+                  aria-label={label('continuous')}
+                  type="checkbox"
+                  checked={row.continuous}
+                  onChange={handleContinuousChange(row.id)}
                 />
               </td>
               <td>

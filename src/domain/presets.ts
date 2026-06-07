@@ -8,6 +8,9 @@ export const DEFAULT_PRESETS = [
     defaultDemandFactor: 1,
     defaultBreaker: '10 A',
     defaultWireSize: '1.5 sq.mm',
+    defaultPowerFactor: 0.9,
+    defaultContinuous: true,
+    isMotor: false,
   },
   {
     id: 'socket',
@@ -16,6 +19,9 @@ export const DEFAULT_PRESETS = [
     defaultDemandFactor: 1,
     defaultBreaker: '16 A',
     defaultWireSize: '2.5 sq.mm',
+    defaultPowerFactor: 1,
+    defaultContinuous: false,
+    isMotor: false,
   },
   {
     id: 'aircon',
@@ -24,6 +30,9 @@ export const DEFAULT_PRESETS = [
     defaultDemandFactor: 1,
     defaultBreaker: '20 A',
     defaultWireSize: '4 sq.mm',
+    defaultPowerFactor: 0.9,
+    defaultContinuous: true,
+    isMotor: true,
   },
   {
     id: 'motor',
@@ -32,6 +41,9 @@ export const DEFAULT_PRESETS = [
     defaultDemandFactor: 1,
     defaultBreaker: '16 A',
     defaultWireSize: '2.5 sq.mm',
+    defaultPowerFactor: 0.85,
+    defaultContinuous: true,
+    isMotor: true,
   },
   {
     id: 'water_heater',
@@ -40,14 +52,20 @@ export const DEFAULT_PRESETS = [
     defaultDemandFactor: 1,
     defaultBreaker: '20 A',
     defaultWireSize: '4 sq.mm',
+    defaultPowerFactor: 1,
+    defaultContinuous: true,
+    isMotor: false,
   },
   {
     id: 'ev_charger',
     labelKey: 'preset.evCharger',
     defaultVaPerUnit: 7400,
     defaultDemandFactor: 1,
-    defaultBreaker: '40 A',
+    defaultBreaker: '50 A',
     defaultWireSize: '10 sq.mm',
+    defaultPowerFactor: 1,
+    defaultContinuous: true,
+    isMotor: false,
   },
   {
     id: 'general',
@@ -56,6 +74,9 @@ export const DEFAULT_PRESETS = [
     defaultDemandFactor: 1,
     defaultBreaker: '16 A',
     defaultWireSize: '2.5 sq.mm',
+    defaultPowerFactor: 0.9,
+    defaultContinuous: false,
+    isMotor: false,
   },
   {
     id: 'other',
@@ -64,6 +85,9 @@ export const DEFAULT_PRESETS = [
     defaultDemandFactor: 1,
     defaultBreaker: '',
     defaultWireSize: '',
+    defaultPowerFactor: 1,
+    defaultContinuous: false,
+    isMotor: false,
   },
 ] as const satisfies readonly LoadPreset[];
 
@@ -89,6 +113,11 @@ export function createLoadRow(preset: Readonly<LoadPreset> = DEFAULT_PRESETS[0])
     breaker: preset.defaultBreaker,
     wireSize: preset.defaultWireSize,
     notes: '',
+    powerFactor: preset.defaultPowerFactor,
+    lengthM: 0,
+    continuous: preset.defaultContinuous,
+    isMotor: preset.isMotor,
+    groundSize: '',
   };
 }
 
@@ -97,7 +126,7 @@ export function createStarterProject(now = new Date()): ElectricalProject {
   const projectDate = isoTimestamp.slice(0, 10);
 
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     language: 'en',
     projectInfo: {
       projectName: '',
@@ -110,6 +139,12 @@ export function createStarterProject(now = new Date()): ElectricalProject {
       voltageThreePhase: 400,
       defaultDemandFactor: 1,
       unbalanceWarningPercent: 15,
+      installationMethod: 'conduit_wall',
+      ambientTempC: 40,
+      conductorsInGroup: 1,
+      branchVoltageDropLimitPercent: 3,
+      totalVoltageDropLimitPercent: 5,
+      feederDemandFactor: 1,
     },
     presets: DEFAULT_PRESETS.map((preset) => ({ ...preset })),
     rows: [createLoadRow()],

@@ -1,6 +1,7 @@
 import type { ChangeEvent } from 'react';
 
-import type { ElectricalProject, ProjectInfo, SystemSettings } from '../domain/types';
+import { INSTALLATION_METHODS } from '../domain/standards';
+import type { ElectricalProject, InstallationMethod, ProjectInfo, SystemSettings } from '../domain/types';
 
 interface ProjectSettingsProps {
   project: ElectricalProject;
@@ -45,6 +46,16 @@ function ProjectSettings({ project, label, onChange }: ProjectSettingsProps) {
 
       updateSystemSettings(key, percent ? value / 100 : value);
     };
+  }
+
+  function handleMethodChange(event: ChangeEvent<HTMLSelectElement>) {
+    onChange({
+      ...project,
+      systemSettings: {
+        ...project.systemSettings,
+        installationMethod: event.currentTarget.value as InstallationMethod,
+      },
+    });
   }
 
   return (
@@ -105,6 +116,57 @@ function ProjectSettings({ project, label, onChange }: ProjectSettingsProps) {
             type="number"
             value={project.systemSettings.unbalanceWarningPercent}
             onChange={handleNumberChange('unbalanceWarningPercent')}
+          />
+        </label>
+        <label>
+          {label('installationMethod')}
+          <select value={project.systemSettings.installationMethod} onChange={handleMethodChange}>
+            {INSTALLATION_METHODS.map((method) => (
+              <option key={method} value={method}>
+                {label(`method.${method}`)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          {label('ambientTempC')}
+          <input
+            type="number"
+            value={project.systemSettings.ambientTempC}
+            onChange={handleNumberChange('ambientTempC')}
+          />
+        </label>
+        <label>
+          {label('conductorsInGroup')}
+          <input
+            type="number"
+            min={1}
+            value={project.systemSettings.conductorsInGroup}
+            onChange={handleNumberChange('conductorsInGroup')}
+          />
+        </label>
+        <label>
+          {label('branchVdLimit')}
+          <input
+            type="number"
+            value={project.systemSettings.branchVoltageDropLimitPercent}
+            onChange={handleNumberChange('branchVoltageDropLimitPercent')}
+          />
+        </label>
+        <label>
+          {label('totalVdLimit')}
+          <input
+            type="number"
+            value={project.systemSettings.totalVoltageDropLimitPercent}
+            onChange={handleNumberChange('totalVoltageDropLimitPercent')}
+          />
+        </label>
+        <label>
+          {label('feederDemandFactor')}
+          <input
+            type="number"
+            value={project.systemSettings.feederDemandFactor * 100}
+            onChange={handleNumberChange('feederDemandFactor', true)}
           />
         </label>
       </div>

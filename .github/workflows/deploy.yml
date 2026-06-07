@@ -1,8 +1,10 @@
-name: Deploy static content to Pages
+name: Build & Deploy React app (dist) - manual only
 
+# ปิดการรันอัตโนมัติเพื่อไม่ให้ชนกับ static.yml (ซึ่ง deploy index.html)
+# โปรเจกต์นี้ใช้ index.html เป็นแอปหลัก หากต้องการ deploy เวอร์ชัน React (src/)
+# ให้สั่งรัน workflow นี้เองจากแท็บ Actions หรือเปลี่ยน on: กลับเป็น push trigger
 on:
-  push:
-    branches: ['main'] # รันเมื่อมีการ push ขึ้น branch main
+  workflow_dispatch:
 
 permissions:
   contents: read

@@ -1,0 +1,276 @@
+/**
+ * Reference tables and engineering helpers based on the Thai electrical
+ * installation standard (มาตรฐานการติดตั้งทางไฟฟ้าสำหรับประเทศไทย, วสท./EIT 2564).
+ *
+ * IMPORTANT: The numeric values below follow the structure and typical figures
+ * of the วสท. tables (copper conductors, 70°C PVC insulation, base ambient
+ * 40°C). They are intended for preliminary design assistance. Always verify
+ * against the latest published edition of the standard for the specific
+ * installation method before construction.
+ */
+
+export type InstallationMethod = 'conduit_wall' | 'conduit_air' | 'tray_clipped';
+
+export const INSTALLATION_METHODS: InstallationMethod[] = [
+  'conduit_wall',
+  'conduit_air',
+  'tray_clipped',
+];
+
+/** Standard copper conductor cross-sectional areas (sq.mm). */
+export const WIRE_SIZES_SQMM = [
+  1.5, 2.5, 4, 6, 10, 16, 25, 35, 50, 70, 95, 120, 150, 185, 240, 300,
+] as const;
+
+/**
+ * Base ampacity (A) for copper, 70°C PVC, base ambient 40°C, by installation
+ * method. Reference: วสท. ตารางที่ 5-20/5-21 (representative values).
+ *   conduit_wall  – สายในท่อร้อยสายฝังในผนัง/เดินลอย กลุ่มที่ 2
+ *   conduit_air   – สายในท่อร้อยสายเดินในอากาศ กลุ่มที่ 5/7
+ *   tray_clipped  – สายเกาะผนัง/บนรางเคเบิลมีระยะห่าง กลุ่มที่ 1
+ */
+export const BASE_AMPACITY: Record<InstallationMethod, Record<number, number>> = {
+  conduit_wall: {
+    1.5: 16, 2.5: 22, 4: 29, 6: 37, 10: 51, 16: 68, 25: 89, 35: 110,
+    50: 134, 70: 171, 95: 207, 120: 239, 150: 275, 185: 314, 240: 369, 300: 424,
+  },
+  conduit_air: {
+    1.5: 17, 2.5: 24, 4: 32, 6: 41, 10: 57, 16: 76, 25: 101, 35: 125,
+    50: 151, 70: 192, 95: 232, 120: 269, 150: 309, 185: 353, 240: 415, 300: 477,
+  },
+  tray_clipped: {
+    1.5: 19, 2.5: 26, 4: 35, 6: 46, 10: 63, 16: 85, 25: 112, 35: 138,
+    50: 168, 70: 213, 95: 258, 120: 299, 150: 344, 185: 392, 240: 461, 300: 530,
+  },
+};
+
+/**
+ * Ambient temperature correction factors for PVC 70°C conductors,
+ * relative to the 40°C base used by the ampacity tables.
+ * Reference: วสท. ตารางตัวคูณปรับค่าตามอุณหภูมิแวดล้อม.
+ */
+const AMBIENT_CORRECTION: Array<{ temp: number; factor: number }> = [
+  { temp: 25, factor: 1.12 },
+  { temp: 30, factor: 1.08 },
+  { temp: 35, factor: 1.04 },
+  { temp: 40, factor: 1.0 },
+  { temp: 45, factor: 0.91 },
+  { temp: 50, factor: 0.82 },
+  { temp: 55, factor: 0.71 },
+  { temp: 60, factor: 0.58 },
+];
+
+export function ambientCorrectionFactor(ambientTempC: number): number {
+  if (!Number.isFinite(ambientTempC)) {
+    return 1;
+  }
+
+  // Linear interpolation across the reference points, clamped at both ends.
+  const points = AMBIENT_CORRECTION;
+  if (ambientTempC <= points[0].temp) {
+    return points[0].factor;
+  }
+  if (ambientTempC >= points[points.length - 1].temp) {
+    return points[points.length - 1].factor;
+  }
+
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const a = points[i];
+    const b = points[i + 1];
+    if (ambientTempC >= a.temp && ambientTempC <= b.temp) {
+      const ratio = (ambientTempC - a.temp) / (b.temp - a.temp);
+      return a.factor + ratio * (b.factor - a.factor);
+    }
+  }
+
+  return 1;
+}
+
+/**
+ * Grouping (bundling) derating factors for multiple current-carrying circuits
+ * grouped together. Reference: วสท. ตารางตัวคูณลดเนื่องจากการเดินสายหลายวงจร.
+ */
+export function groupingFactor(circuits: number): number {
+  if (!Number.isFinite(circuits) || circuits <= 1) {
+    return 1;
+  }
+
+  const table: Record<number, number> = {
+    2: 0.8,
+    3: 0.7,
+    4: 0.65,
+    5: 0.6,
+    6: 0.57,
+    7: 0.54,
+    8: 0.52,
+    9: 0.5,
+  };
+
+  const n = Math.floor(circuits);
+  if (n >= 10) {
+    return 0.45;
+  }
+
+  return table[n] ?? 1;
+}
+
+/**
+ * Equipment grounding conductor (สายดินบริภัณฑ์) minimum copper size, by the
+ * rating of the upstream overcurrent protective device.
+ * Reference: วสท. ตารางที่ 4-2.
+ */
+const EGC_TABLE: Array<{ maxOcpd: number; sizeSqmm: number }> = [
+  { maxOcpd: 16, sizeSqmm: 1.5 },
+  { maxOcpd: 20, sizeSqmm: 2.5 },
+  { maxOcpd: 40, sizeSqmm: 4 },
+  { maxOcpd: 70, sizeSqmm: 6 },
+  { maxOcpd: 100, sizeSqmm: 10 },
+  { maxOcpd: 200, sizeSqmm: 16 },
+  { maxOcpd: 400, sizeSqmm: 25 },
+  { maxOcpd: 500, sizeSqmm: 35 },
+  { maxOcpd: 800, sizeSqmm: 50 },
+  { maxOcpd: 1000, sizeSqmm: 70 },
+  { maxOcpd: 1250, sizeSqmm: 95 },
+  { maxOcpd: 2000, sizeSqmm: 120 },
+  { maxOcpd: 2500, sizeSqmm: 185 },
+  { maxOcpd: 4000, sizeSqmm: 240 },
+  { maxOcpd: 6000, sizeSqmm: 400 },
+];
+
+export function requiredEgcSqmm(ocpdAmp: number): number | null {
+  if (!Number.isFinite(ocpdAmp) || ocpdAmp <= 0) {
+    return null;
+  }
+
+  for (const entry of EGC_TABLE) {
+    if (ocpdAmp <= entry.maxOcpd) {
+      return entry.sizeSqmm;
+    }
+  }
+
+  return EGC_TABLE[EGC_TABLE.length - 1].sizeSqmm;
+}
+
+/** Standard circuit-breaker / fuse frame ratings (A). */
+export const STANDARD_BREAKER_SIZES = [
+  6, 10, 16, 20, 25, 32, 40, 50, 63, 80, 100, 125, 160, 200, 250, 320, 400,
+  500, 630, 800, 1000, 1250, 1600,
+] as const;
+
+/** Smallest standard breaker size that is >= the required ampere value. */
+export function nextStandardBreaker(amp: number): number {
+  if (!Number.isFinite(amp) || amp <= 0) {
+    return STANDARD_BREAKER_SIZES[0];
+  }
+
+  for (const size of STANDARD_BREAKER_SIZES) {
+    if (size >= amp) {
+      return size;
+    }
+  }
+
+  return STANDARD_BREAKER_SIZES[STANDARD_BREAKER_SIZES.length - 1];
+}
+
+/**
+ * AC resistance (Ω/km) of copper conductors at 70°C operating temperature,
+ * and reactance (Ω/km) representative for cables in conduit. Used for
+ * voltage-drop estimation. Reference: IEC 60364-5-52 / วสท. ภาคผนวก.
+ */
+const CONDUCTOR_R_OHM_PER_KM: Record<number, number> = {
+  1.5: 14.48, 2.5: 8.87, 4: 5.52, 6: 3.69, 10: 2.19, 16: 1.38, 25: 0.87,
+  35: 0.627, 50: 0.463, 70: 0.321, 95: 0.232, 120: 0.184, 150: 0.15,
+  185: 0.121, 240: 0.0925, 300: 0.0745,
+};
+
+const CONDUCTOR_X_OHM_PER_KM = 0.08;
+
+function nearestWireSize(sqmm: number): number {
+  let best = WIRE_SIZES_SQMM[0];
+  let bestDiff = Math.abs(sqmm - best);
+  for (const size of WIRE_SIZES_SQMM) {
+    const diff = Math.abs(sqmm - size);
+    if (diff < bestDiff) {
+      best = size;
+      bestDiff = diff;
+    }
+  }
+  return best;
+}
+
+/** Base ampacity (before derating) for a given wire size and method. */
+export function baseAmpacity(sqmm: number, method: InstallationMethod): number | null {
+  const table = BASE_AMPACITY[method] ?? BASE_AMPACITY.conduit_wall;
+  if (sqmm in table) {
+    return table[sqmm];
+  }
+
+  const exact = WIRE_SIZES_SQMM.find((size) => Math.abs(size - sqmm) < 1e-6);
+  return exact !== undefined ? table[exact] : null;
+}
+
+/** Conductor R/X (Ω/km), snapping to the nearest standard size if needed. */
+export function conductorImpedance(sqmm: number): { r: number; x: number } {
+  const size = sqmm in CONDUCTOR_R_OHM_PER_KM ? sqmm : nearestWireSize(sqmm);
+  return { r: CONDUCTOR_R_OHM_PER_KM[size], x: CONDUCTOR_X_OHM_PER_KM };
+}
+
+/**
+ * Voltage drop (volts) for a run.
+ *   phases: 'single' uses factor 2 (line + neutral), 'three' uses √3.
+ *   lengthM in metres (one-way run length), currentA in amperes.
+ *   powerFactor 0..1; reactive component uses sin(φ).
+ */
+export function voltageDropVolts(params: {
+  currentA: number;
+  lengthM: number;
+  sqmm: number;
+  phases: 'single' | 'three';
+  powerFactor: number;
+}): number {
+  const { currentA, lengthM, sqmm, phases, powerFactor } = params;
+  if (
+    !Number.isFinite(currentA) ||
+    !Number.isFinite(lengthM) ||
+    lengthM <= 0 ||
+    sqmm <= 0
+  ) {
+    return 0;
+  }
+
+  const { r, x } = conductorImpedance(sqmm);
+  const pf = Number.isFinite(powerFactor) ? Math.min(1, Math.max(0, powerFactor)) : 1;
+  const sinPhi = Math.sqrt(Math.max(0, 1 - pf * pf));
+  const zEffective = r * pf + x * sinPhi; // Ω/km
+  const factor = phases === 'three' ? Math.sqrt(3) : 2;
+
+  return (factor * currentA * lengthM * zEffective) / 1000;
+}
+
+/** Parse a numeric ampere value from free text such as "20 A", "20A RCBO". */
+export function parseAmpere(text: string): number | null {
+  if (typeof text !== 'string') {
+    return null;
+  }
+  const match = text.match(/(\d+(?:\.\d+)?)\s*a\b/i) ?? text.match(/(\d+(?:\.\d+)?)/);
+  if (!match) {
+    return null;
+  }
+  const value = Number(match[1]);
+  return Number.isFinite(value) && value > 0 ? value : null;
+}
+
+/** Parse a conductor area (sq.mm) from free text such as "2.5 sq.mm", "4". */
+export function parseWireSqmm(text: string): number | null {
+  if (typeof text !== 'string') {
+    return null;
+  }
+  const match = text.match(/(\d+(?:\.\d+)?)/);
+  if (!match) {
+    return null;
+  }
+  const value = Number(match[1]);
+  return Number.isFinite(value) && value > 0 ? value : null;
+}
+
+// sync-probe-12345

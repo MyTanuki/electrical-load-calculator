@@ -24,6 +24,8 @@ describe('domain presets', () => {
     expect(row.demandFactor).toBe(DEFAULT_PRESETS[2].defaultDemandFactor);
     expect(row.breaker).toBe(DEFAULT_PRESETS[2].defaultBreaker);
     expect(row.wireSize).toBe(DEFAULT_PRESETS[2].defaultWireSize);
+    expect(row.isMotor).toBe(true);
+    expect(row.continuous).toBe(DEFAULT_PRESETS[2].defaultContinuous);
   });
 
   it('uses zero VA per unit when a preset has no default VA', () => {
@@ -37,7 +39,7 @@ describe('domain presets', () => {
     const now = new Date('2026-06-05T06:15:30.000Z');
     const project = createStarterProject(now);
 
-    expect(project.schemaVersion).toBe(1);
+    expect(project.schemaVersion).toBe(2);
     expect(project.language).toBe('en');
     expect(project.projectInfo.date).toBe('2026-06-05');
     expect(project.systemSettings).toEqual({
@@ -45,6 +47,12 @@ describe('domain presets', () => {
       voltageThreePhase: 400,
       defaultDemandFactor: 1,
       unbalanceWarningPercent: 15,
+      installationMethod: 'conduit_wall',
+      ambientTempC: 40,
+      conductorsInGroup: 1,
+      branchVoltageDropLimitPercent: 3,
+      totalVoltageDropLimitPercent: 5,
+      feederDemandFactor: 1,
     });
     expect(project.rows).toHaveLength(1);
     expect(project.createdAt).toBe(now.toISOString());
