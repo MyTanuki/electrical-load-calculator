@@ -111,6 +111,33 @@ label {
   color: #17384a;
 }
 
+.app-tabs {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  border: 1px solid #c7d2e2;
+  border-radius: 8px;
+  padding: 4px;
+  background: #e9eef6;
+  gap: 4px;
+}
+
+.app-tabs button {
+  min-width: 150px;
+  border-color: transparent;
+  background: transparent;
+  color: #35465c;
+  font-weight: 700;
+}
+
+.app-tabs button.active,
+.app-tabs button[aria-selected="true"] {
+  border-color: #9fb5d4;
+  background: #ffffff;
+  color: #172033;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 8%);
+}
+
 .workspace-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -155,7 +182,8 @@ label {
 }
 
 .load-table,
-.report-table {
+.report-table,
+.standards-table {
   width: 100%;
   border-collapse: collapse;
 }
@@ -214,6 +242,59 @@ td select {
   border-radius: 6px;
   padding: 10px 10px 10px 28px;
   background: #fff7d8;
+}
+
+.standards-reference {
+  display: grid;
+  gap: 16px;
+}
+
+.standards-reference h3 {
+  margin: 0 0 12px;
+}
+
+.standards-note {
+  max-width: 980px;
+  margin: 0;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.standards-reference-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.standards-table th,
+.standards-table td {
+  white-space: nowrap;
+}
+
+.standards-table tbody th {
+  color: #172033;
+  font-size: 14px;
+}
+
+.compact-table {
+  min-width: 260px;
+}
+
+.standards-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}
+
+.standards-chip-list span {
+  border: 1px solid #c7d2e2;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #f8fafc;
+  color: #172033;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .print-report {
@@ -333,6 +414,16 @@ td select {
     width: 100%;
   }
 
+  .app-tabs,
+  .app-tabs button {
+    width: 100%;
+  }
+
+  .app-tabs {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
   .panel {
     padding: 12px;
   }
@@ -358,6 +449,7 @@ td select {
   }
 
   .toolbar,
+  .app-tabs,
   .workspace-grid,
   .modal-overlay,
   .status-message {

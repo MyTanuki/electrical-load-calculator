@@ -4,6 +4,7 @@ import LoadSchedule from './components/LoadSchedule';
 import PrintReport from './components/PrintReport';
 import ProjectSettings from './components/ProjectSettings';
 import SaveLoadDialog from './components/SaveLoadDialog';
+import StandardsReference from './components/StandardsReference';
 import SummaryPanel from './components/SummaryPanel';
 import Toolbar, { type ToolbarLabels } from './components/Toolbar';
 import { calculateProject } from './domain/calculations';
@@ -13,6 +14,8 @@ import { loadDraft, parseImportedProject, saveDraft, serializeProject } from './
 import type { ElectricalProject, Language } from './domain/types';
 import { t } from './i18n/translations';
 import defaultLoadSchedule from '../default-loadschedule.json';
+
+type AppTab = 'calculation' | 'standards';
 
 function loadInitialProject(): ElectricalProject {
   return loadDraft() ?? legacyDefaultLoadScheduleToProject(defaultLoadSchedule) ?? createStarterProject();
@@ -28,6 +31,7 @@ function App() {
   const [project, setProject] = useState<ElectricalProject>(loadInitialProject);
   const [message, setMessage] = useState('');
   const [showSaveLoad, setShowSaveLoad] = useState(false);
+  const [activeTab, setActiveTab] = useState<AppTab>('calculation');
   const language = project.language;
   const calculation = useMemo(() => calculateProject(project), [project]);
 
@@ -139,13 +143,49 @@ function App() {
         </p>
       ) : null}
 
-      <section className="workspace-grid">
-        <ProjectSettings project={project} label={label} onChange={(nextProject) => updateProject(() => nextProject)} />
+      <nav className="app-tabs" role="tablist" aria-label={label('mainTabs')}>
+        <button
+          type="button"
+          role="tab"
+          id="calculation-tab"
+          aria-controls="calculation-panel"
+          aria-selected={activeTab === 'calculation'}
+          className={activeTab === 'calculation' ? 'active' : undefined}
+          onClick={() => setActiveTab('calculation')}
+        >
+          {label('calculationTab')}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id="standards-tab"
+          aria-controls="standards-panel"
+          aria-selected={activeTab === 'standards'}
+          className={activeTab === 'standards' ? 'active' : undefined}
+          onClick={() => setActiveTab('standards')}
+        >
+          {label('standardsTab')}
+        </button>
+      </nav>
 
-        <LoadSchedule project={project} label={label} onChange={(nextProject) => updateProject(() => nextProject)} />
+      {activeTab === 'calculation' ? (
+        <section
+          id="calculation-panel"
+          className="workspace-grid"
+          role="tabpanel"
+          aria-labelledby="calculation-tab"
+        >
+          <ProjectSettings project={project} label={label} onChange={(nextProject) => updateProject(() => nextProject)} />
 
-        <SummaryPanel calculation={calculation} label={label} />
-      </section>
+          <LoadSchedule project={project} label={label} onChange={(nextProject) => updateProject(() => nextProject)} />
+
+          <SummaryPanel calculation={calculation} label={label} />
+        </section>
+      ) : (
+        <section id="standards-panel" role="tabpanel" aria-labelledby="standards-tab">
+          <StandardsReference label={label} />
+        </section>
+      )}
 
       <PrintReport project={project} calculation={calculation} label={label} />
 

@@ -253,10 +253,128 @@
             font-size: 15px;
         }
 
+        .app-tabs {
+            display: inline-flex;
+            width: fit-content;
+            max-width: 100%;
+            margin: 0 0 16px;
+            border: 1px solid #bfdbfe;
+            border-radius: 10px;
+            padding: 4px;
+            background: #dbeafe;
+            gap: 4px;
+        }
+
+        .tab-button {
+            min-width: 170px;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            padding: 10px 14px;
+            background: transparent;
+            color: var(--primary);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .tab-button[aria-selected="true"] {
+            border-color: #93c5fd;
+            background: white;
+            color: var(--text);
+            box-shadow: 0 1px 2px rgba(15,23,42,0.12);
+        }
+
+        .tab-panel {
+            display: none;
+            width: 100%;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        .standards-panel {
+            background: var(--paper);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            padding: 20px;
+        }
+
+        .standards-panel h2,
+        .standards-panel h3 {
+            margin-top: 0;
+        }
+
+        .standards-note {
+            margin: 0 0 18px;
+            color: #4b5563;
+            line-height: 1.7;
+        }
+
+        .standards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+            gap: 18px;
+            margin-top: 18px;
+        }
+
+        .standards-card {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px;
+            overflow-x: auto;
+        }
+
+        .standards-table {
+            min-width: 100%;
+            margin-top: 10px;
+            border-color: var(--border);
+        }
+
+        .standards-table th,
+        .standards-table td {
+            border-color: var(--border);
+            white-space: nowrap;
+        }
+
+        .standards-chip-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 10px 0 0;
+        }
+
+        .standards-chip-list span {
+            border: 1px solid #bfdbfe;
+            border-radius: 999px;
+            padding: 6px 10px;
+            background: #eff6ff;
+            color: var(--primary);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        @media (max-width: 640px) {
+            .app-tabs {
+                display: grid;
+                width: 100%;
+            }
+
+            .tab-button {
+                width: 100%;
+            }
+        }
+
     </style>
 </head>
 <body>
 
+    <nav class="app-tabs no-print" role="tablist" aria-label="แท็บหลัก">
+        <button id="calculationTab" class="tab-button" type="button" role="tab" aria-selected="true" aria-controls="calculationPanel" onclick="switchTab('calculation')">การคำนวณ</button>
+        <button id="standardsTab" class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="standardsPanel" onclick="switchTab('standards')">ข้อมูลมาตรฐาน วสท.</button>
+    </nav>
+
+    <section id="calculationPanel" class="tab-panel active" role="tabpanel" aria-labelledby="calculationTab">
     <div class="control-panel no-print">
         <div class="input-group">
             <label>PROJECT</label>
@@ -425,6 +543,73 @@
             </div>
         </div>
     </div>
+    </section>
+
+    <section id="standardsPanel" class="tab-panel standards-panel no-print" role="tabpanel" aria-labelledby="standardsTab">
+        <h2>ข้อมูลมาตรฐาน วสท.</h2>
+        <p class="standards-note">ค่ามาตรฐานอ้างอิงจากตารางที่แอปใช้สำหรับตรวจสอบงานออกแบบเบื้องต้น ต้องตรวจสอบกับเอกสาร วสท. ฉบับล่าสุดก่อนนำไปก่อสร้างจริง</p>
+
+        <div class="standards-card">
+            <h3>พิกัดกระแสสายทองแดง</h3>
+            <table class="standards-table">
+                <thead>
+                    <tr>
+                        <th>ขนาดสาย (ตร.มม.)</th>
+                        <th>ร้อยท่อฝัง/เกาะผนัง</th>
+                        <th>ร้อยท่อเดินในอากาศ</th>
+                        <th>เกาะผนัง/รางเคเบิล</th>
+                    </tr>
+                </thead>
+                <tbody id="standardsAmpacityBody"></tbody>
+            </table>
+        </div>
+
+        <div class="standards-grid">
+            <div class="standards-card">
+                <h3>ขนาดเบรกเกอร์มาตรฐาน</h3>
+                <p id="standardsBreakerList" class="standards-chip-list"></p>
+            </div>
+
+            <div class="standards-card">
+                <h3>ตัวคูณปรับค่าอุณหภูมิ</h3>
+                <table class="standards-table">
+                    <thead>
+                        <tr>
+                            <th>อุณหภูมิแวดล้อม (°C)</th>
+                            <th>ตัวคูณปรับค่า</th>
+                        </tr>
+                    </thead>
+                    <tbody id="standardsAmbientBody"></tbody>
+                </table>
+            </div>
+
+            <div class="standards-card">
+                <h3>ตัวคูณลดพิกัดจากการเดินสายรวมกลุ่ม</h3>
+                <table class="standards-table">
+                    <thead>
+                        <tr>
+                            <th>จำนวนวงจรรวมกลุ่ม</th>
+                            <th>ตัวคูณปรับค่า</th>
+                        </tr>
+                    </thead>
+                    <tbody id="standardsGroupingBody"></tbody>
+                </table>
+            </div>
+
+            <div class="standards-card">
+                <h3>ขนาดสายดินบริภัณฑ์</h3>
+                <table class="standards-table">
+                    <thead>
+                        <tr>
+                            <th>พิกัด OCPD</th>
+                            <th>สายดินขั้นต่ำ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="standardsEgcBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
 
     <script>
         // Set Date
@@ -546,6 +731,51 @@
                 branchVD: val('cpBranchVD', 3),
                 totalVD: val('cpTotalVD', 5)
             };
+        }
+
+        function switchTab(tab) {
+            const isStandards = tab === 'standards';
+            document.getElementById('calculationPanel').classList.toggle('active', !isStandards);
+            document.getElementById('standardsPanel').classList.toggle('active', isStandards);
+            document.getElementById('calculationTab').setAttribute('aria-selected', String(!isStandards));
+            document.getElementById('standardsTab').setAttribute('aria-selected', String(isStandards));
+
+            if (isStandards) {
+                renderStandardsReference();
+            }
+        }
+
+        function renderStandardsReference() {
+            const ampacityBody = document.getElementById('standardsAmpacityBody');
+            if (!ampacityBody || ampacityBody.dataset.rendered === 'true') return;
+
+            ampacityBody.innerHTML = STD_WIRE.map(size => `
+                <tr>
+                    <th scope="row">${size}</th>
+                    <td>${BASE_AMPACITY.conduit_wall[size]} A</td>
+                    <td>${BASE_AMPACITY.conduit_air[size]} A</td>
+                    <td>${BASE_AMPACITY.tray_clipped[size]} A</td>
+                </tr>
+            `).join('');
+            ampacityBody.dataset.rendered = 'true';
+
+            document.getElementById('standardsBreakerList').innerHTML = STD_CB
+                .map(size => `<span>${size} A</span>`)
+                .join('');
+
+            const ambientRows = [[25,1.12],[30,1.08],[35,1.04],[40,1],[45,0.91],[50,0.82],[55,0.71],[60,0.58]];
+            document.getElementById('standardsAmbientBody').innerHTML = ambientRows
+                .map(([temp, factor]) => `<tr><th scope="row">${temp}</th><td>${factor.toFixed(2)}</td></tr>`)
+                .join('');
+
+            const groupingRows = [1,2,3,4,5,6,7,8,9,10];
+            document.getElementById('standardsGroupingBody').innerHTML = groupingRows
+                .map(count => `<tr><th scope="row">${count >= 10 ? '10+' : count}</th><td>${groupingFactor(count).toFixed(2)}</td></tr>`)
+                .join('');
+
+            document.getElementById('standardsEgcBody').innerHTML = EGC_TABLE
+                .map(row => `<tr><th scope="row">${row.max} A</th><td>${row.gnd} sq.mm</td></tr>`)
+                .join('');
         }
 
         function syncHeaders() {
