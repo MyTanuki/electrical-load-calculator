@@ -1,10 +1,11 @@
 import { createStarterProject } from './presets';
-import type { ElectricalProject, LoadRow, Phase } from './types';
+import type { ElectricalProject, LoadInputUnit, LoadRow, Phase } from './types';
 
 interface LegacyDefaultCircuit {
   id?: number | string;
   desc?: string;
   va?: number;
+  inputUnit?: string;
   phase?: string;
   cb?: string;
   wire?: string;
@@ -25,6 +26,10 @@ export interface LegacyDefaultLoadSchedule {
 
 function phaseOrDefault(value: string | undefined): Phase {
   return value === 'L2' || value === 'L3' ? value : 'L1';
+}
+
+function inputUnitOrDefault(value: string | undefined): LoadInputUnit {
+  return value === 'W' ? 'W' : 'VA';
 }
 
 function loadTypeFromDescription(description: string): string {
@@ -60,6 +65,7 @@ function circuitToRow(circuit: LegacyDefaultCircuit, index: number): LoadRow {
     phase: phaseOrDefault(circuit.phase),
     quantity: 1,
     vaPerUnit: va,
+    inputUnit: inputUnitOrDefault(circuit.inputUnit),
     demandFactor: 1,
     voltage: 230,
     breaker: formatBreaker(circuit.cb),

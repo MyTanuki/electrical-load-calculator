@@ -86,7 +86,8 @@ export function calculateRow(row: LoadRow, settings?: SystemSettings): RowCalcul
   const demandFactor = clampDemandFactor(row.demandFactor);
   const voltage = clampMinimum(row.voltage, 0);
   const powerFactor = clampPowerFactor(row.powerFactor);
-  const totalVa = quantity * vaPerUnit;
+  const apparentVaPerUnit = row.inputUnit === 'W' ? vaPerUnit / powerFactor : vaPerUnit;
+  const totalVa = quantity * apparentVaPerUnit;
   const demandVa = totalVa * demandFactor;
   const demandW = demandVa * powerFactor;
   const phaseVa = emptyPhaseVa();

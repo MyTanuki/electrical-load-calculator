@@ -1,6 +1,7 @@
 import type {
   ElectricalProject,
   InstallationMethod,
+  LoadInputUnit,
   LoadPreset,
   LoadRow,
   ProjectInfo,
@@ -113,6 +114,7 @@ function isLoadRow(value: unknown): value is LoadRow {
     (value.phase === 'L1' || value.phase === 'L2' || value.phase === 'L3') &&
     isNumber(value.quantity) &&
     isNumber(value.vaPerUnit) &&
+    (value.inputUnit === undefined || value.inputUnit === 'VA' || value.inputUnit === 'W') &&
     isNumber(value.demandFactor) &&
     isNumber(value.voltage) &&
     isString(value.breaker) &&
@@ -156,6 +158,10 @@ function installationMethodOr(value: unknown, fallback: InstallationMethod): Ins
     : fallback;
 }
 
+function loadInputUnitOr(value: unknown, fallback: LoadInputUnit): LoadInputUnit {
+  return value === 'VA' || value === 'W' ? value : fallback;
+}
+
 /**
  * Fill any fields added after schema v1 with sensible defaults so older saved
  * projects keep working, then stamp the current schema version.
@@ -191,6 +197,7 @@ function migrateProject(project: ElectricalProject): ElectricalProject {
     const rawRow = row as unknown as Record<string, unknown>;
     return {
       ...row,
+      inputUnit: loadInputUnitOr(rawRow.inputUnit, 'VA'),
       powerFactor: numberOr(rawRow.powerFactor, 1),
       lengthM: numberOr(rawRow.lengthM, 0),
       continuous: booleanOr(rawRow.continuous, false),

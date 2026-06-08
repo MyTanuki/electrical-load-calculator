@@ -7,75 +7,106 @@
   "circuits": [
     {
       "id": 1,
-      "desc": "Lighting 1",
+      "desc": "แสงสว่าง",
       "va": 800,
+      "inputUnit": "VA",
       "phase": "L1",
       "cb": "",
       "wire": "",
-      "gnd": ""
+      "gnd": "",
+      "length": 10
     },
     {
       "id": 2,
-      "desc": "Receptacle 1",
+      "desc": "ตู้แช่",
       "va": 1500,
+      "inputUnit": "VA",
       "phase": "L1",
       "cb": "",
       "wire": "",
-      "gnd": ""
+      "gnd": "",
+      "length": 10
     },
     {
       "id": 3,
-      "desc": "Receptacle 2",
+      "desc": "ตู้แช่",
       "va": 2000,
+      "inputUnit": "VA",
       "phase": "L1",
       "cb": "",
       "wire": "",
-      "gnd": ""
+      "gnd": "",
+      "length": 10
     },
     {
       "id": 4,
-      "desc": "Receptacle 3",
+      "desc": "ตู้แช่",
       "va": 2000,
+      "inputUnit": "VA",
       "phase": "L1",
       "cb": "",
       "wire": "",
-      "gnd": ""
+      "gnd": "",
+      "length": 10
     },
     {
       "id": 5,
-      "desc": "Receptacle 4",
+      "desc": "ตู้แช่",
       "va": 2000,
+      "inputUnit": "VA",
       "phase": "L1",
       "cb": "",
       "wire": "",
-      "gnd": ""
+      "gnd": "",
+      "length": 10
     },
     {
       "id": 6,
-      "desc": "Receptacle 5",
+      "desc": "ตู้แช่",
       "va": 2000,
+      "inputUnit": "VA",
       "phase": "L1",
       "cb": "",
       "wire": "",
-      "gnd": ""
+      "gnd": "",
+      "continuous": true,
+      "length": 10
     },
     {
       "id": 7,
-      "desc": "Receptacle 6",
+      "desc": "ตู้แช่",
       "va": 2000,
+      "inputUnit": "VA",
       "phase": "L1",
       "cb": "",
       "wire": "",
-      "gnd": ""
+      "gnd": "",
+      "length": 10
     },
     {
       "id": 8,
-      "desc": "Receptacle 7",
+      "desc": "ตู้แช่",
       "va": 2000,
+      "inputUnit": "VA",
       "phase": "L1",
       "cb": "",
       "wire": "",
-      "gnd": ""
+      "gnd": "",
+      "continuous": true,
+      "length": 10
+    },
+    {
+      "id": 9,
+      "desc": "ปลั๊กไฟ",
+      "va": 1000,
+      "inputUnit": "VA",
+      "phase": "L1",
+      "cb": "",
+      "wire": "",
+      "gnd": "",
+      "pf": 1,
+      "length": 10,
+      "continuous": false
     }
   ]
 }

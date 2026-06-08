@@ -7,84 +7,106 @@
   "circuits": [
     {
       "id": 1,
-      "desc": "Lighting 1",
-      "va": 240,
+      "desc": "แสงสว่าง",
+      "va": 800,
+      "inputUnit": "VA",
       "phase": "L1",
       "cb": "",
-      "wire": "2.5"
+      "wire": "",
+      "gnd": "",
+      "length": 10
     },
     {
       "id": 2,
-      "desc": "Receptacle 1",
+      "desc": "ตู้แช่",
       "va": 1500,
+      "inputUnit": "VA",
       "phase": "L1",
       "cb": "",
-      "wire": "4",
-      "gnd": ""
+      "wire": "",
+      "gnd": "",
+      "length": 10
     },
     {
       "id": 3,
-      "desc": "Receptacle 2",
-      "va": 1500,
+      "desc": "ตู้แช่",
+      "va": 2000,
+      "inputUnit": "VA",
       "phase": "L1",
       "cb": "",
-      "wire": "4"
+      "wire": "",
+      "gnd": "",
+      "length": 10
     },
     {
       "id": 4,
-      "desc": "Receptacle 3",
-      "va": 1500,
+      "desc": "ตู้แช่",
+      "va": 2000,
+      "inputUnit": "VA",
       "phase": "L1",
       "cb": "",
-      "wire": "4"
+      "wire": "",
+      "gnd": "",
+      "length": 10
     },
     {
       "id": 5,
-      "desc": "Receptacle 4",
-      "va": 2500,
+      "desc": "ตู้แช่",
+      "va": 2000,
+      "inputUnit": "VA",
       "phase": "L1",
       "cb": "",
-      "wire": "4",
-      "gnd": ""
+      "wire": "",
+      "gnd": "",
+      "length": 10
     },
     {
       "id": 6,
-      "desc": "Receptacle 5",
-      "va": 2500,
+      "desc": "ตู้แช่",
+      "va": 2000,
+      "inputUnit": "VA",
       "phase": "L1",
       "cb": "",
-      "wire": "4",
-      "gnd": ""
+      "wire": "",
+      "gnd": "",
+      "continuous": true,
+      "length": 10
     },
     {
       "id": 7,
-      "desc": "Receptacle 6",
-      "va": 2500,
+      "desc": "ตู้แช่",
+      "va": 2000,
+      "inputUnit": "VA",
       "phase": "L1",
       "cb": "",
-      "wire": "4",
-      "gnd": ""
+      "wire": "",
+      "gnd": "",
+      "length": 10
     },
     {
       "id": 8,
-      "desc": "Receptacle 7",
-      "va": 2500,
+      "desc": "ตู้แช่",
+      "va": 2000,
+      "inputUnit": "VA",
       "phase": "L1",
       "cb": "",
-      "wire": "4",
-      "gnd": ""
+      "wire": "",
+      "gnd": "",
+      "continuous": true,
+      "length": 10
     },
     {
       "id": 9,
-      "desc": "Receptacle 8",
-      "va": 2500,
+      "desc": "ปลั๊กไฟ",
+      "va": 1000,
+      "inputUnit": "VA",
       "phase": "L1",
       "cb": "",
-      "wire": "4",
+      "wire": "",
       "gnd": "",
       "pf": 1,
-      "length": 0,
-      "continuous": true
+      "length": 10,
+      "continuous": false
     }
   ]
 }

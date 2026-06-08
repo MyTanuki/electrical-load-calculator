@@ -190,6 +190,7 @@ label {
 
 .load-table {
   width: 100%;
+  min-width: 1500px;
 }
 
 .report-table {
@@ -212,7 +213,7 @@ th {
 
 td input,
 td select {
-  min-width: 96px;
+  min-width: 76px;
 }
 
 .row-actions,

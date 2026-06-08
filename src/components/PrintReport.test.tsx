@@ -10,13 +10,17 @@ const label = (key: string) =>
     appTitle: 'Electrical load calculator',
     breaker: 'Breaker',
     circuitNo: 'Circuit no.',
+    continuous: 'Continuous',
+    continuousLoad: 'Continuous',
     date: 'Date',
     demandFactor: 'Demand factor',
     demandVa: 'Demand VA',
     description: 'Description',
     disclaimer: 'For review only.',
+    inputUnit: 'Input unit',
     loadSchedule: 'Load schedule',
     location: 'Location',
+    nonContinuousLoad: 'Non-continuous',
     phase: 'Phase',
     phaseBalance: 'Phase balance',
     preparedBy: 'Prepared by',
@@ -24,8 +28,9 @@ const label = (key: string) =>
     quantity: 'Quantity',
     totalConnectedVa: 'Total connected VA',
     totalDemandVa: 'Total demand VA',
+    totalVa: 'Total VA',
     unbalance: 'Unbalance',
-    vaPerUnit: 'VA per unit',
+    vaPerUnit: 'Load per unit',
     wireSize: 'Wire size',
   })[key] ?? key;
 
@@ -41,6 +46,6 @@ describe('PrintReport', () => {
 
     const bodyRow = screen.getAllByRole('row')[1];
 
-    expect(within(bodyRow).getAllByRole('cell')[5].textContent).toBe('-');
+    expect(within(bodyRow).getAllByRole('cell')[8].textContent).toBe('-');
   });
 });

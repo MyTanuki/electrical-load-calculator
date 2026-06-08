@@ -1,7 +1,7 @@
 import type { ChangeEvent } from 'react';
 
 import { createId, createLoadRow } from '../domain/presets';
-import type { ElectricalProject, LoadPhaseMode, LoadRow, Phase } from '../domain/types';
+import type { ElectricalProject, LoadInputUnit, LoadPhaseMode, LoadRow, Phase } from '../domain/types';
 
 interface LoadScheduleProps {
   project: ElectricalProject;
@@ -49,10 +49,19 @@ function LoadSchedule({ project, label, onChange }: LoadScheduleProps) {
   }
 
   function handleContinuousChange(rowId: string) {
-    return (event: ChangeEvent<HTMLInputElement>) => {
+    return (event: ChangeEvent<HTMLSelectElement>) => {
       updateRow(rowId, (row) => ({
         ...row,
-        continuous: event.currentTarget.checked,
+        continuous: event.currentTarget.value === 'continuous',
+      }));
+    };
+  }
+
+  function handleInputUnitChange(rowId: string) {
+    return (event: ChangeEvent<HTMLSelectElement>) => {
+      updateRow(rowId, (row) => ({
+        ...row,
+        inputUnit: event.currentTarget.value as LoadInputUnit,
       }));
     };
   }
@@ -127,6 +136,7 @@ function LoadSchedule({ project, label, onChange }: LoadScheduleProps) {
             <th>{label('phase')}</th>
             <th>{label('quantity')}</th>
             <th>{label('vaPerUnit')}</th>
+            <th>{label('inputUnit')}</th>
             <th>{label('demandFactor')}</th>
             <th>{label('voltage')}</th>
             <th>{label('powerFactor')}</th>
@@ -202,6 +212,12 @@ function LoadSchedule({ project, label, onChange }: LoadScheduleProps) {
                 />
               </td>
               <td>
+                <select aria-label={label('inputUnit')} value={row.inputUnit} onChange={handleInputUnitChange(row.id)}>
+                  <option value="VA">VA</option>
+                  <option value="W">W</option>
+                </select>
+              </td>
+              <td>
                 <input
                   aria-label={label('demandFactor')}
                   type="number"
@@ -262,12 +278,14 @@ function LoadSchedule({ project, label, onChange }: LoadScheduleProps) {
                 />
               </td>
               <td>
-                <input
+                <select
                   aria-label={label('continuous')}
-                  type="checkbox"
-                  checked={row.continuous}
+                  value={row.continuous ? 'continuous' : 'nonContinuous'}
                   onChange={handleContinuousChange(row.id)}
-                />
+                >
+                  <option value="continuous">{label('continuousLoad')}</option>
+                  <option value="nonContinuous">{label('nonContinuousLoad')}</option>
+                </select>
               </td>
               <td>
                 <input

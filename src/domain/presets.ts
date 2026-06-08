@@ -108,6 +108,7 @@ export function createLoadRow(preset: Readonly<LoadPreset> = DEFAULT_PRESETS[0])
     phase: 'L1',
     quantity: 1,
     vaPerUnit: preset.defaultVaPerUnit ?? 0,
+    inputUnit: 'VA',
     demandFactor: preset.defaultDemandFactor,
     voltage: 230,
     breaker: preset.defaultBreaker,

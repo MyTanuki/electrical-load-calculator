@@ -72,7 +72,7 @@ describe('domain storage', () => {
         ({ defaultPowerFactor: _pf, defaultContinuous: _c, isMotor: _m, ...rest }) => rest,
       ),
       rows: current.rows.map(
-        ({ powerFactor: _pf, lengthM: _l, continuous: _c, isMotor: _m, groundSize: _g, ...rest }) => rest,
+        ({ inputUnit: _u, powerFactor: _pf, lengthM: _l, continuous: _c, isMotor: _m, groundSize: _g, ...rest }) => rest,
       ),
     };
 
@@ -84,6 +84,7 @@ describe('domain storage', () => {
       expect(result.project.systemSettings.installationMethod).toBe('conduit_wall');
       expect(result.project.systemSettings.ambientTempC).toBe(40);
       expect(result.project.systemSettings.feederDemandFactor).toBe(1);
+      expect(result.project.rows[0].inputUnit).toBe('VA');
       expect(result.project.rows[0].powerFactor).toBe(1);
       expect(result.project.rows[0].continuous).toBe(false);
       expect(result.project.rows[0].groundSize).toBe('');

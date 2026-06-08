@@ -13,13 +13,17 @@ const label = (key: string) =>
     circuitNo: 'Circuit no.',
     date: 'Date',
     defaultDemandFactor: 'Default demand factor',
+    continuous: 'Continuous',
+    continuousLoad: 'Continuous',
     delete: 'Delete',
     demandFactor: 'Demand factor',
     description: 'Description',
     duplicate: 'Duplicate',
+    inputUnit: 'Input unit',
     loadSchedule: 'Load schedule',
     loadType: 'Load type',
     location: 'Location',
+    nonContinuousLoad: 'Non-continuous',
     notes: 'Notes',
     phase: 'Phase',
     phaseMode: 'Phase mode',
@@ -28,7 +32,7 @@ const label = (key: string) =>
     projectSettings: 'Project settings',
     quantity: 'Quantity',
     unbalanceThreshold: 'Unbalance threshold',
-    vaPerUnit: 'VA per unit',
+    vaPerUnit: 'Load per unit',
     voltage: 'Voltage',
     voltageSinglePhase: 'Single-phase voltage',
     voltageThreePhase: 'Three-phase voltage',
@@ -116,6 +120,34 @@ describe('project editing components', () => {
     const editedProject = lastProject(onChange);
     rerender(<LoadSchedule project={editedProject} label={label} onChange={onChange} />);
 
+    fireEvent.change(screen.getByLabelText('Input unit'), { target: { value: 'W' } });
+    expect(onChange).toHaveBeenLastCalledWith({
+      ...editedProject,
+      rows: [
+        {
+          ...editedProject.rows[0],
+          inputUnit: 'W',
+        },
+      ],
+    });
+
+    const wattInputProject = lastProject(onChange);
+    rerender(<LoadSchedule project={wattInputProject} label={label} onChange={onChange} />);
+
+    fireEvent.change(screen.getByLabelText('Continuous'), { target: { value: 'nonContinuous' } });
+    expect(onChange).toHaveBeenLastCalledWith({
+      ...wattInputProject,
+      rows: [
+        {
+          ...wattInputProject.rows[0],
+          continuous: false,
+        },
+      ],
+    });
+
+    const nonContinuousProject = lastProject(onChange);
+    rerender(<LoadSchedule project={nonContinuousProject} label={label} onChange={onChange} />);
+
     fireEvent.click(screen.getByRole('button', { name: 'Add row' }));
     const addedProject = lastProject(onChange);
     expect(addedProject.rows).toHaveLength(2);
@@ -146,7 +178,7 @@ describe('project editing components', () => {
 
     render(<LoadSchedule project={project} label={label} onChange={onChange} />);
 
-    changeInputProgrammatically('VA per unit', '1e309');
+    changeInputProgrammatically('Load per unit', '1e309');
     expect(onChange).not.toHaveBeenCalled();
   });
 });

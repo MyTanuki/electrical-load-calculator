@@ -6,6 +6,8 @@ export type Phase = 'L1' | 'L2' | 'L3';
 
 export type LoadPhaseMode = 'single' | 'three';
 
+export type LoadInputUnit = 'VA' | 'W';
+
 export type { InstallationMethod };
 
 export interface ProjectInfo {
@@ -58,6 +60,8 @@ export interface LoadRow {
   phase: Phase;
   quantity: number;
   vaPerUnit: number;
+  /** Unit used for vaPerUnit input. W is converted to VA by dividing by PF. */
+  inputUnit: LoadInputUnit;
   demandFactor: number;
   voltage: number;
   breaker: string;

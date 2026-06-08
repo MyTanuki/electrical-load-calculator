@@ -44,9 +44,13 @@ function PrintReport({ project, calculation, label }: PrintReportProps) {
             <th>{label('description')}</th>
             <th>{label('quantity')}</th>
             <th>{label('vaPerUnit')}</th>
+            <th>{label('inputUnit')}</th>
             <th>{label('demandFactor')}</th>
+            <th>{label('continuous')}</th>
+            <th>{label('totalVa')}</th>
             <th>{label('demandVa')}</th>
             <th>{label('currentA')}</th>
+            <th>{label('designCurrent')}</th>
             <th>{label('phase')}</th>
             <th>{label('breaker')}</th>
             <th>{label('wireSize')}</th>
@@ -65,9 +69,13 @@ function PrintReport({ project, calculation, label }: PrintReportProps) {
                 <td>{row.description}</td>
                 <td>{row.quantity.toLocaleString()}</td>
                 <td>{formatVa(row.vaPerUnit)}</td>
+                <td>{row.inputUnit}</td>
                 <td>{formatPercent(row.demandFactor * 100)}</td>
+                <td>{label(row.continuous ? 'continuousLoad' : 'nonContinuousLoad')}</td>
+                <td>{rowCalculation ? formatVa(rowCalculation.totalVa) : '-'}</td>
                 <td>{rowCalculation ? formatVa(rowCalculation.demandVa) : '-'}</td>
                 <td>{rowCalculation ? formatAmp(rowCalculation.currentA) : '-'}</td>
+                <td>{rowCalculation ? formatAmp(rowCalculation.designCurrentA) : '-'}</td>
                 <td>{row.phaseMode === 'three' ? '3P' : row.phase}</td>
                 <td>{row.breaker}</td>
                 <td>{row.wireSize}</td>

@@ -127,7 +127,7 @@
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
             width: 100%;
-            min-width: 900px;
+            min-width: 1280px;
         }
 
         .doc-header {
@@ -161,12 +161,12 @@
             border-collapse: collapse;
             border: 2px solid var(--table-border);
             margin-top: 20px;
-            font-size: 13px;
+            font-size: 12px;
         }
 
         th, td {
             border: 1px solid var(--table-border);
-            padding: 8px 4px;
+            padding: 6px 3px;
             text-align: center;
             vertical-align: middle;
         }
@@ -180,8 +180,8 @@
             width: 100%;
             border: 1px solid transparent;
             text-align: center;
-            font-size: 13px;
-            padding: 4px;
+            font-size: 12px;
+            padding: 3px;
             background: transparent;
             font-family: inherit;
         }
@@ -196,7 +196,7 @@
         .desc-input {
             text-align: left;
             width: 100%;
-            min-width: 150px;
+            min-width: 130px;
         }
 
         .phase-dropdown {
@@ -470,22 +470,26 @@
                     <tr>
                         <th rowspan="2" style="width: 40px;">CCT.</th>
                         <th rowspan="2">Description</th>
-                        <th rowspan="2" style="width: 80px;">Load (VA)</th>
-                        <th rowspan="2" style="width: 70px;">Phase</th>
+                        <th rowspan="2" style="width: 70px;">Load</th>
+                        <th rowspan="2" style="width: 55px;">Unit</th>
+                        <th rowspan="2" style="width: 55px;">PF</th>
+                        <th rowspan="2" style="width: 75px;">Calc VA</th>
+                        <th rowspan="2" style="width: 85px;">Load Type</th>
+                        <th rowspan="2" style="width: 55px;">Phase</th>
                         <th colspan="3" class="col-3p">Phase Load (VA)</th>
-                        <th rowspan="2" style="width: 60px;">Amps</th>
-                        <th rowspan="2" style="width: 50px;">PF</th>
-                        <th rowspan="2" style="width: 60px;">ยาว (m)</th>
-                        <th rowspan="2" style="width: 100px;">CB (AT)</th>
-                        <th rowspan="2" style="width: 70px;">CB (AF)</th>
-                        <th rowspan="2" style="width: 60px;">Pole</th>
-                        <th rowspan="2" style="width: 90px;">Wire (sq.mm)</th>
-                        <th rowspan="2" style="width: 90px;">GND (sq.mm)</th>
-                        <th rowspan="2" style="width: 55px;">IZ (A)</th>
-                        <th rowspan="2" style="width: 55px;">%VD</th>
-                        <th rowspan="2" style="width: 70px;">Conduit</th>
-                        <th rowspan="2" style="width: 55px;">สถานะ</th>
-                        <th rowspan="2" class="no-print" style="width: 50px;">Act</th>
+                        <th rowspan="2" style="width: 55px;">Amps</th>
+                        <th rowspan="2" style="width: 70px;">Design Amps</th>
+                        <th rowspan="2" style="width: 55px;">ยาว (m)</th>
+                        <th rowspan="2" style="width: 90px;">CB (AT)</th>
+                        <th rowspan="2" style="width: 60px;">CB (AF)</th>
+                        <th rowspan="2" style="width: 50px;">Pole</th>
+                        <th rowspan="2" style="width: 80px;">Wire (sq.mm)</th>
+                        <th rowspan="2" style="width: 80px;">GND (sq.mm)</th>
+                        <th rowspan="2" style="width: 50px;">IZ (A)</th>
+                        <th rowspan="2" style="width: 50px;">%VD</th>
+                        <th rowspan="2" style="width: 60px;">Conduit</th>
+                        <th rowspan="2" style="width: 50px;">สถานะ</th>
+                        <th rowspan="2" class="no-print" style="width: 45px;">Act</th>
                     </tr>
                     <tr class="col-3p">
                         <th style="width: 70px;">L1 (R)</th>
@@ -499,12 +503,17 @@
                 <tfoot>
                     <tr class="summary-row">
                         <td colspan="2" style="text-align: right; padding-right: 15px;">TOTAL</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
                         <td id="sumVA">0</td>
+                        <td></td>
                         <td></td>
                         <td id="sumL1" class="col-3p">0</td>
                         <td id="sumL2" class="col-3p">0</td>
                         <td id="sumL3" class="col-3p">0</td>
                         <td id="sumAmps">0.0</td>
+                        <td id="sumDesignAmps">0.0</td>
                         <td></td>
                         <td></td>
                         <td></td>
@@ -709,6 +718,17 @@
             return (isFinite(v) && v > 0) ? v : null;
         }
 
+        function loadPowerFactor(c) {
+            const pf = parseFloat(c.pf);
+            return (isFinite(pf) && pf > 0) ? Math.min(1, pf) : 1;
+        }
+
+        function circuitApparentVA(c) {
+            const input = isFinite(c.va) ? Number(c.va) : 0;
+            if (input <= 0) return 0;
+            return c.inputUnit === 'W' ? input / loadPowerFactor(c) : input;
+        }
+
         function nextStdCB(amp) {
             for (const s of STD_CB) { if (s >= amp) return s; }
             return STD_CB[STD_CB.length-1];
@@ -818,6 +838,7 @@
                 id: circuits.length + 1,
                 desc: 'New Circuit',
                 va: 0,
+                inputUnit: 'VA',
                 phase: nextPhase,
                 cb: '',
                 wire: '',
@@ -841,6 +862,10 @@
                 circuits[index][field] = parseInt(value) || 0;
             } else if (field === 'pf' || field === 'length') {
                 circuits[index][field] = parseFloat(value) || 0;
+            } else if (field === 'continuous') {
+                circuits[index][field] = value === true || value === 'true';
+            } else if (field === 'inputUnit') {
+                circuits[index][field] = value === 'W' ? 'W' : 'VA';
             } else {
                 circuits[index][field] = value;
             }
@@ -871,13 +896,14 @@
         // ประเมินวงจรย่อยตามค่าที่ผู้ใช้กรอกจริง คืนค่าพิกัดกระแสสาย, %VD และคำเตือน
         function evaluateCircuit(c, settings) {
             const continuous = c.continuous !== undefined ? c.continuous : true;
-            const pf = (isFinite(c.pf) && c.pf > 0) ? Math.min(1, c.pf) : 1;
+            const pf = loadPowerFactor(c);
             const lengthM = isFinite(c.length) ? c.length : 0;
-            const current = c.va / 230;
+            const apparentVA = circuitApparentVA(c);
+            const current = apparentVA / 230;
             const designCurrent = current * (continuous ? 1.25 : 1);
 
             const cbAmp = parseAmp(c.cb);
-            const auto = determineSizes(c.va, { settings: settings, continuous: continuous, breakerAmp: cbAmp });
+            const auto = determineSizes(apparentVA, { settings: settings, continuous: continuous, breakerAmp: cbAmp });
             const effectiveCbAmp = cbAmp || auto.cb;
             const wireSqmm = parseWire(c.wire) || auto.wire;
             const gndSqmm = parseWire(c.gnd);
@@ -896,24 +922,29 @@
 
             return {
                 amp: current, designCurrent: designCurrent, cbAmp: effectiveCbAmp, wireSqmm: wireSqmm,
-                iz: iz, reqGnd: reqGnd, vdV: vdV, vdPct: vdPct, pf: pf, kw: c.va * pf / 1000,
+                iz: iz, reqGnd: reqGnd, vdV: vdV, vdPct: vdPct, pf: pf, kw: apparentVA * pf / 1000,
+                apparentVA: apparentVA,
                 warnings: warnings
             };
         }
 
         function calculate() {
-            let totalVA = 0, sumL1 = 0, sumL2 = 0, sumL3 = 0;
+            let totalVA = 0, sumL1 = 0, sumL2 = 0, sumL3 = 0, totalDesignAmp = 0;
             const is3P = document.getElementById('cpSystem').value === '3P';
+            const settings = getSettings();
 
             circuits.forEach(c => {
-                totalVA += c.va;
+                const ev = evaluateCircuit(c, settings);
+                const apparentVA = ev.apparentVA;
+                totalVA += apparentVA;
+                totalDesignAmp += ev.designCurrent;
                 if (is3P) {
-                    if(c.phase === 'L1') sumL1 += c.va;
-                    if(c.phase === 'L2') sumL2 += c.va;
-                    if(c.phase === 'L3') sumL3 += c.va;
+                    if(c.phase === 'L1') sumL1 += apparentVA;
+                    if(c.phase === 'L2') sumL2 += apparentVA;
+                    if(c.phase === 'L3') sumL3 += apparentVA;
                 } else {
                     c.phase = 'L1';
-                    sumL1 += c.va;
+                    sumL1 += apparentVA;
                 }
             });
 
@@ -927,9 +958,9 @@
 
             const totalAmp = is3P ? (totalVA / (Math.sqrt(3) * 400)) : (totalVA / 230);
             document.getElementById('sumAmps').innerText = totalAmp.toFixed(1);
+            document.getElementById('sumDesignAmps').innerText = totalDesignAmp.toFixed(1);
 
             // --- Engineering aggregates (kW, demand, VD, neutral, motor) -----
-            const settings = getSettings();
             let totalKW = 0, maxVD = 0, largestMotorAmp = 0;
             circuits.forEach(c => {
                 const ev = evaluateCircuit(c, settings);
@@ -991,10 +1022,11 @@
             let otherCount = 0;
 
             circuits.forEach(c => {
-                totalVA += c.va;
-                if(c.phase === 'L1') sumL1 += c.va;
-                if(c.phase === 'L2') sumL2 += c.va;
-                if(c.phase === 'L3') sumL3 += c.va;
+                const apparentVA = circuitApparentVA(c);
+                totalVA += apparentVA;
+                if(c.phase === 'L1') sumL1 += apparentVA;
+                if(c.phase === 'L2') sumL2 += apparentVA;
+                if(c.phase === 'L3') sumL3 += apparentVA;
                 
                 const desc = c.desc.toLowerCase();
                 if (desc.includes('light') || desc.includes('แสงสว่าง')) lightCount++;
@@ -1060,8 +1092,9 @@
             const settings = getSettings();
             circuits.forEach((c, index) => {
                 const continuous = c.continuous !== undefined ? c.continuous : true;
-                const calc = determineSizes(c.va, { settings: settings, continuous: continuous, breakerAmp: parseAmp(c.cb) });
                 const ev = evaluateCircuit(c, settings);
+                const calc = determineSizes(ev.apparentVA, { settings: settings, continuous: continuous, breakerAmp: parseAmp(c.cb) });
+                const apparentTxt = Math.round(ev.apparentVA).toLocaleString();
                 const izTxt = ev.iz !== null ? ev.iz.toFixed(0) : '-';
                 const vdTxt = (c.length > 0) ? ev.vdPct.toFixed(2) + '%' : '-';
                 const vdColor = (c.length > 0 && ev.vdPct > settings.branchVD) ? 'var(--danger)' : 'inherit';
@@ -1089,14 +1122,28 @@
                     <td>${c.id}</td>
                     <td><input type="text" class="table-input desc-input" value="${c.desc}" onchange="updateData(${index}, 'desc', this.value)"></td>
                     <td><input type="number" class="table-input" value="${c.va}" onchange="updateData(${index}, 'va', this.value); renderTable();"></td>
+                    <td>
+                        <select class="table-input" onchange="updateData(${index}, 'inputUnit', this.value); renderTable();">
+                            <option value="VA" ${(c.inputUnit || 'VA') === 'VA' ? 'selected' : ''}>VA</option>
+                            <option value="W" ${c.inputUnit === 'W' ? 'selected' : ''}>W</option>
+                        </select>
+                    </td>
+                    <td><input type="number" step="0.05" min="0" max="1" class="table-input" value="${c.pf !== undefined ? c.pf : 1}" onchange="updateData(${index}, 'pf', this.value); renderTable();"></td>
+                    <td>${apparentTxt}</td>
+                    <td>
+                        <select class="table-input" onchange="updateData(${index}, 'continuous', this.value); renderTable();">
+                            <option value="true" ${continuous ? 'selected' : ''}>ต่อเนื่อง</option>
+                            <option value="false" ${!continuous ? 'selected' : ''}>ไม่ต่อเนื่อง</option>
+                        </select>
+                    </td>
                     <td style="position:relative;">
                         ${phaseDropdown}
                     </td>
-                    <td class="col-3p">${c.phase === 'L1' ? c.va : ''}</td>
-                    <td class="col-3p">${c.phase === 'L2' ? c.va : ''}</td>
-                    <td class="col-3p">${c.phase === 'L3' ? c.va : ''}</td>
+                    <td class="col-3p">${c.phase === 'L1' ? apparentTxt : ''}</td>
+                    <td class="col-3p">${c.phase === 'L2' ? apparentTxt : ''}</td>
+                    <td class="col-3p">${c.phase === 'L3' ? apparentTxt : ''}</td>
                     <td>${calc.amp.toFixed(1)}</td>
-                    <td><input type="number" step="0.05" min="0" max="1" class="table-input" value="${c.pf !== undefined ? c.pf : 1}" onchange="updateData(${index}, 'pf', this.value); renderTable();"></td>
+                    <td>${calc.designCurrent.toFixed(1)}</td>
                     <td><input type="number" min="0" class="table-input" value="${c.length !== undefined ? c.length : 0}" onchange="updateData(${index}, 'length', this.value); renderTable();"></td>
                     <td><input type="text" class="table-input" placeholder="${calc.cb}" value="${c.cb}" onchange="updateData(${index}, 'cb', this.value); renderTable();"></td>
                     <td>50AF</td>
@@ -1177,14 +1224,14 @@
               "designer": "",
               "meter": "PEA 30(100)A",
               "circuits": [
-                { "id": 1, "desc": "Lighting 1", "va": 800, "phase": "L1", "cb": "16A", "wire": "2.5" },
-                { "id": 2, "desc": "Receptacle 1", "va": 1500, "phase": "L1", "cb": "20A", "wire": "4" },
-                { "id": 3, "desc": "Receptacle 2", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" },
-                { "id": 4, "desc": "Receptacle 3", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" },
-                { "id": 5, "desc": "Receptacle 4", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" },
-                { "id": 6, "desc": "Receptacle 5", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" },
-                { "id": 7, "desc": "Receptacle 6", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" },
-                { "id": 8, "desc": "Receptacle 7", "va": 2000, "phase": "L1", "cb": "20A RCBO", "wire": "4" }
+                { "id": 1, "desc": "Lighting 1", "va": 800, "inputUnit": "VA", "phase": "L1", "cb": "16A", "wire": "2.5", "continuous": true },
+                { "id": 2, "desc": "Receptacle 1", "va": 1500, "inputUnit": "VA", "phase": "L1", "cb": "20A", "wire": "4", "continuous": false },
+                { "id": 3, "desc": "Receptacle 2", "va": 2000, "inputUnit": "VA", "phase": "L1", "cb": "20A RCBO", "wire": "4", "continuous": false },
+                { "id": 4, "desc": "Receptacle 3", "va": 2000, "inputUnit": "VA", "phase": "L1", "cb": "20A RCBO", "wire": "4", "continuous": false },
+                { "id": 5, "desc": "Receptacle 4", "va": 2000, "inputUnit": "VA", "phase": "L1", "cb": "20A RCBO", "wire": "4", "continuous": false },
+                { "id": 6, "desc": "Receptacle 5", "va": 2000, "inputUnit": "VA", "phase": "L1", "cb": "20A RCBO", "wire": "4", "continuous": false },
+                { "id": 7, "desc": "Receptacle 6", "va": 2000, "inputUnit": "VA", "phase": "L1", "cb": "20A RCBO", "wire": "4", "continuous": false },
+                { "id": 8, "desc": "Receptacle 7", "va": 2000, "inputUnit": "VA", "phase": "L1", "cb": "20A RCBO", "wire": "4", "continuous": false }
               ]
             });
         }

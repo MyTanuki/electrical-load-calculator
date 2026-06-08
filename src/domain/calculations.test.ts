@@ -266,4 +266,22 @@ describe('engineering checks (วสท. standards)', () => {
     expect(result.demandVa).toBe(1000);
     expect(result.demandW).toBeCloseTo(800);
   });
+
+  it('converts watt input to apparent VA before sizing', () => {
+    const result = calculateRow(
+      loadRow({
+        quantity: 1,
+        vaPerUnit: 1000,
+        inputUnit: 'W',
+        demandFactor: 1,
+        powerFactor: 0.8,
+        voltage: 230,
+      }),
+    );
+
+    expect(result.totalVa).toBeCloseTo(1250);
+    expect(result.demandVa).toBeCloseTo(1250);
+    expect(result.demandW).toBeCloseTo(1000);
+    expect(result.currentA).toBeCloseTo(1250 / 230);
+  });
 });
