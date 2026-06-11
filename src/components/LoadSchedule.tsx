@@ -74,6 +74,7 @@ function LoadSchedule({ project, label, onChange }: LoadScheduleProps) {
       updateRow(rowId, (row) => ({
         ...row,
         loadTypeId,
+        powerFactor: preset?.defaultPowerFactor ?? row.powerFactor,
         // Keep the motor flag in sync so the largest-motor feeder rule applies.
         isMotor: preset?.isMotor ?? row.isMotor,
       }));

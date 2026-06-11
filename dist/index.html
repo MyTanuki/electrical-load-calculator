@@ -472,9 +472,10 @@
                         <th rowspan="2">Description</th>
                         <th rowspan="2" style="width: 70px;">Load</th>
                         <th rowspan="2" style="width: 55px;">Unit</th>
+                        <th rowspan="2" style="width: 80px;">Type</th>
                         <th rowspan="2" style="width: 55px;">PF</th>
                         <th rowspan="2" style="width: 75px;">Calc VA</th>
-                        <th rowspan="2" style="width: 85px;">Load Type</th>
+                        <th rowspan="2" style="width: 85px;">Duty</th>
                         <th rowspan="2" style="width: 55px;">Phase</th>
                         <th colspan="3" class="col-3p">Phase Load (VA)</th>
                         <th rowspan="2" style="width: 55px;">Amps</th>
@@ -503,6 +504,7 @@
                 <tfoot>
                     <tr class="summary-row">
                         <td colspan="2" style="text-align: right; padding-right: 15px;">TOTAL</td>
+                        <td></td>
                         <td></td>
                         <td></td>
                         <td></td>
@@ -657,6 +659,18 @@
             {max:200,gnd:16},{max:400,gnd:25},{max:500,gnd:35},{max:800,gnd:50},{max:1000,gnd:70}
         ];
 
+        const LOAD_CATEGORIES = [
+            {id:'lighting_led', label:'LED', pf:0.95},
+            {id:'socket', label:'เต้ารับ', pf:1},
+            {id:'freezer', label:'ตู้แช่', pf:0.9},
+            {id:'aircon', label:'แอร์', pf:0.9},
+            {id:'motor', label:'มอเตอร์', pf:0.85},
+            {id:'heater', label:'ฮีตเตอร์', pf:1},
+            {id:'ev_charger', label:'EV', pf:1},
+            {id:'general', label:'ทั่วไป', pf:1},
+            {id:'other', label:'อื่นๆ', pf:1}
+        ];
+
         // ความต้านทาน R (โอห์ม/กม.) ทองแดง 70C สำหรับคำนวณแรงดันตก
         const COND_R = {1.5:14.48,2.5:8.87,4:5.52,6:3.69,10:2.19,16:1.38,25:0.87,35:0.627,50:0.463,70:0.321,95:0.232,120:0.184,150:0.15,185:0.121,240:0.0925,300:0.0745};
         const COND_X = 0.08; // รีแอกแตนซ์โดยประมาณ (โอห์ม/กม.)
@@ -721,6 +735,23 @@
         function loadPowerFactor(c) {
             const pf = parseFloat(c.pf);
             return (isFinite(pf) && pf > 0) ? Math.min(1, pf) : 1;
+        }
+
+        function loadCategory(categoryId) {
+            return LOAD_CATEGORIES.find(item => item.id === categoryId) || LOAD_CATEGORIES[LOAD_CATEGORIES.length-1];
+        }
+
+        function inferLoadCategory(c) {
+            if (c.loadCategory) return c.loadCategory;
+            const desc = (c.desc || '').toLowerCase();
+            if (desc.includes('light') || desc.includes('แสง')) return 'lighting_led';
+            if (desc.includes('freezer') || desc.includes('refriger') || desc.includes('ตู้แช่')) return 'freezer';
+            if (desc.includes('air') || desc.includes('a/c') || desc.includes('แอร์')) return 'aircon';
+            if (desc.includes('motor') || desc.includes('pump') || desc.includes('มอเตอร์') || desc.includes('ปั๊ม')) return 'motor';
+            if (desc.includes('heater') || desc.includes('heat') || desc.includes('น้ำร้อน')) return 'heater';
+            if (desc.includes('ev')) return 'ev_charger';
+            if (desc.includes('receptacle') || desc.includes('socket') || desc.includes('ปลั๊ก') || desc.includes('เต้ารับ')) return 'socket';
+            return 'general';
         }
 
         function circuitApparentVA(c) {
@@ -839,6 +870,7 @@
                 desc: 'New Circuit',
                 va: 0,
                 inputUnit: 'VA',
+                loadCategory: 'general',
                 phase: nextPhase,
                 cb: '',
                 wire: '',
@@ -866,6 +898,9 @@
                 circuits[index][field] = value === true || value === 'true';
             } else if (field === 'inputUnit') {
                 circuits[index][field] = value === 'W' ? 'W' : 'VA';
+            } else if (field === 'loadCategory') {
+                circuits[index][field] = value;
+                circuits[index].pf = loadCategory(value).pf;
             } else {
                 circuits[index][field] = value;
             }
@@ -1095,6 +1130,8 @@
                 const ev = evaluateCircuit(c, settings);
                 const calc = determineSizes(ev.apparentVA, { settings: settings, continuous: continuous, breakerAmp: parseAmp(c.cb) });
                 const apparentTxt = Math.round(ev.apparentVA).toLocaleString();
+                const selectedCategory = inferLoadCategory(c);
+                const categoryOptions = LOAD_CATEGORIES.map(item => `<option value="${item.id}" ${selectedCategory === item.id ? 'selected' : ''}>${item.label}</option>`).join('');
                 const izTxt = ev.iz !== null ? ev.iz.toFixed(0) : '-';
                 const vdTxt = (c.length > 0) ? ev.vdPct.toFixed(2) + '%' : '-';
                 const vdColor = (c.length > 0 && ev.vdPct > settings.branchVD) ? 'var(--danger)' : 'inherit';
@@ -1126,6 +1163,11 @@
                         <select class="table-input" onchange="updateData(${index}, 'inputUnit', this.value); renderTable();">
                             <option value="VA" ${(c.inputUnit || 'VA') === 'VA' ? 'selected' : ''}>VA</option>
                             <option value="W" ${c.inputUnit === 'W' ? 'selected' : ''}>W</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select class="table-input" onchange="updateData(${index}, 'loadCategory', this.value); renderTable();">
+                            ${categoryOptions}
                         </select>
                     </td>
                     <td><input type="number" step="0.05" min="0" max="1" class="table-input" value="${c.pf !== undefined ? c.pf : 1}" onchange="updateData(${index}, 'pf', this.value); renderTable();"></td>
@@ -1224,14 +1266,14 @@
               "designer": "",
               "meter": "PEA 30(100)A",
               "circuits": [
-                { "id": 1, "desc": "Lighting 1", "va": 800, "inputUnit": "VA", "phase": "L1", "cb": "16A", "wire": "2.5", "continuous": true },
-                { "id": 2, "desc": "Receptacle 1", "va": 1500, "inputUnit": "VA", "phase": "L1", "cb": "20A", "wire": "4", "continuous": false },
-                { "id": 3, "desc": "Receptacle 2", "va": 2000, "inputUnit": "VA", "phase": "L1", "cb": "20A RCBO", "wire": "4", "continuous": false },
-                { "id": 4, "desc": "Receptacle 3", "va": 2000, "inputUnit": "VA", "phase": "L1", "cb": "20A RCBO", "wire": "4", "continuous": false },
-                { "id": 5, "desc": "Receptacle 4", "va": 2000, "inputUnit": "VA", "phase": "L1", "cb": "20A RCBO", "wire": "4", "continuous": false },
-                { "id": 6, "desc": "Receptacle 5", "va": 2000, "inputUnit": "VA", "phase": "L1", "cb": "20A RCBO", "wire": "4", "continuous": false },
-                { "id": 7, "desc": "Receptacle 6", "va": 2000, "inputUnit": "VA", "phase": "L1", "cb": "20A RCBO", "wire": "4", "continuous": false },
-                { "id": 8, "desc": "Receptacle 7", "va": 2000, "inputUnit": "VA", "phase": "L1", "cb": "20A RCBO", "wire": "4", "continuous": false }
+                { "id": 1, "desc": "Lighting 1", "va": 800, "inputUnit": "VA", "loadCategory": "lighting_led", "phase": "L1", "cb": "16A", "wire": "2.5", "continuous": true },
+                { "id": 2, "desc": "Receptacle 1", "va": 1500, "inputUnit": "VA", "loadCategory": "socket", "phase": "L1", "cb": "20A", "wire": "4", "continuous": false },
+                { "id": 3, "desc": "Receptacle 2", "va": 2000, "inputUnit": "VA", "loadCategory": "socket", "phase": "L1", "cb": "20A RCBO", "wire": "4", "continuous": false },
+                { "id": 4, "desc": "Receptacle 3", "va": 2000, "inputUnit": "VA", "loadCategory": "socket", "phase": "L1", "cb": "20A RCBO", "wire": "4", "continuous": false },
+                { "id": 5, "desc": "Receptacle 4", "va": 2000, "inputUnit": "VA", "loadCategory": "socket", "phase": "L1", "cb": "20A RCBO", "wire": "4", "continuous": false },
+                { "id": 6, "desc": "Receptacle 5", "va": 2000, "inputUnit": "VA", "loadCategory": "socket", "phase": "L1", "cb": "20A RCBO", "wire": "4", "continuous": false },
+                { "id": 7, "desc": "Receptacle 6", "va": 2000, "inputUnit": "VA", "loadCategory": "socket", "phase": "L1", "cb": "20A RCBO", "wire": "4", "continuous": false },
+                { "id": 8, "desc": "Receptacle 7", "va": 2000, "inputUnit": "VA", "loadCategory": "socket", "phase": "L1", "cb": "20A RCBO", "wire": "4", "continuous": false }
               ]
             });
         }

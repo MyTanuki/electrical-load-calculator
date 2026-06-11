@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import LoadSchedule from './LoadSchedule';
 import ProjectSettings from './ProjectSettings';
-import { createStarterProject } from '../domain/presets';
+import { DEFAULT_PRESETS, createStarterProject } from '../domain/presets';
 import type { ElectricalProject } from '../domain/types';
 
 const label = (key: string) =>
@@ -38,6 +38,7 @@ const label = (key: string) =>
     voltageThreePhase: 'Three-phase voltage',
     wireSize: 'Wire size',
     'preset.lighting': 'Lighting',
+    'preset.motor': 'Motor',
     'preset.socket': 'Socket outlet',
   })[key] ?? key;
 
@@ -106,12 +107,28 @@ describe('project editing components', () => {
 
     const { rerender } = render(<LoadSchedule project={project} label={label} onChange={onChange} />);
 
-    changeInput('Demand factor', '80');
+    fireEvent.change(screen.getByLabelText('Load type'), { target: { value: 'motor' } });
     expect(onChange).toHaveBeenLastCalledWith({
       ...project,
       rows: [
         {
           ...project.rows[0],
+          loadTypeId: 'motor',
+          powerFactor: DEFAULT_PRESETS[3].defaultPowerFactor,
+          isMotor: true,
+        },
+      ],
+    });
+
+    const motorProject = lastProject(onChange);
+    rerender(<LoadSchedule project={motorProject} label={label} onChange={onChange} />);
+
+    changeInput('Demand factor', '80');
+    expect(onChange).toHaveBeenLastCalledWith({
+      ...motorProject,
+      rows: [
+        {
+          ...motorProject.rows[0],
           demandFactor: 0.8,
         },
       ],
