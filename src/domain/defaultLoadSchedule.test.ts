@@ -11,8 +11,8 @@ describe('legacyDefaultLoadScheduleToProject', () => {
       designer: 'Designer',
       meter: 'PEA 30(100)A',
       circuits: [
-        { id: 1, desc: 'Lighting 1', va: 240, phase: 'L1', cb: '16', wire: '2.5' },
-        { id: 2, desc: 'Receptacle 1', va: 1500, phase: 'L2', cb: '20', wire: '4', gnd: '4' },
+        { id: 1, desc: 'Lighting 1', va: 240, inputUnit: 'W', loadCategory: 'lighting_led', phase: 'L1', cb: '16', wire: '2.5' },
+        { id: 2, desc: 'ตู้แช่ 1', va: 1500, loadCategory: 'freezer', phase: 'L2', cb: '20', wire: '4', gnd: '4' },
       ],
     };
 
@@ -35,12 +35,15 @@ describe('legacyDefaultLoadScheduleToProject', () => {
       phase: 'L1',
       quantity: 1,
       vaPerUnit: 240,
+      inputUnit: 'W',
+      powerFactor: 0.95,
       breaker: '16 A',
       wireSize: '2.5 sq.mm',
     });
     expect(project.rows[1]).toMatchObject({
-      loadTypeId: 'socket',
+      loadTypeId: 'general',
       phase: 'L2',
+      powerFactor: 0.9,
       groundSize: '4 sq.mm',
     });
   });

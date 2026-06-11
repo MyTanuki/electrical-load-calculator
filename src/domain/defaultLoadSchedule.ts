@@ -11,6 +11,7 @@ interface LegacyDefaultCircuit {
   wire?: string;
   gnd?: string;
   pf?: number;
+  loadCategory?: string;
   length?: number;
   continuous?: boolean;
 }
@@ -38,6 +39,43 @@ function loadTypeFromDescription(description: string): string {
   if (normalized.includes('lighting')) return 'lighting';
   if (normalized.includes('receptacle') || normalized.includes('socket')) return 'socket';
   return 'general';
+}
+
+function powerFactorFromLoadCategory(category: string | undefined): number {
+  switch (category) {
+    case 'lighting_led':
+      return 0.95;
+    case 'freezer':
+    case 'aircon':
+      return 0.9;
+    case 'motor':
+      return 0.85;
+    case 'socket':
+    case 'heater':
+    case 'ev_charger':
+    case 'general':
+    case 'other':
+    default:
+      return 1;
+  }
+}
+
+function inferLoadCategory(description: string): string {
+  const normalized = description.toLowerCase();
+
+  if (normalized.includes('lighting') || normalized.includes('แสง')) return 'lighting_led';
+  if (normalized.includes('freezer') || normalized.includes('refriger') || normalized.includes('ตู้แช่')) return 'freezer';
+  if (normalized.includes('air') || normalized.includes('a/c') || normalized.includes('แอร์')) return 'aircon';
+  if (normalized.includes('motor') || normalized.includes('pump') || normalized.includes('มอเตอร์') || normalized.includes('ปั๊ม')) return 'motor';
+  if (normalized.includes('heater') || normalized.includes('heat') || normalized.includes('น้ำร้อน')) return 'heater';
+  if (normalized.includes('ev')) return 'ev_charger';
+  if (normalized.includes('receptacle') || normalized.includes('socket') || normalized.includes('ปลั๊ก') || normalized.includes('เต้ารับ')) return 'socket';
+
+  return 'general';
+}
+
+function powerFactorOrDefault(value: number | undefined, category: string | undefined, description: string): number {
+  return Number.isFinite(value) ? Number(value) : powerFactorFromLoadCategory(category ?? inferLoadCategory(description));
 }
 
 function formatBreaker(value: string | undefined): string {
@@ -71,7 +109,7 @@ function circuitToRow(circuit: LegacyDefaultCircuit, index: number): LoadRow {
     breaker: formatBreaker(circuit.cb),
     wireSize: formatWireSize(circuit.wire),
     notes: '',
-    powerFactor: Number.isFinite(circuit.pf) ? Number(circuit.pf) : 1,
+    powerFactor: powerFactorOrDefault(circuit.pf, circuit.loadCategory, description),
     lengthM: Number.isFinite(circuit.length) ? Number(circuit.length) : 0,
     continuous: Boolean(circuit.continuous),
     isMotor: false,
